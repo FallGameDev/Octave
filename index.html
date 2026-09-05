@@ -3,24 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Octave Music Player</title>
+  <title>Octave</title>
   
-  <!-- Favicon & Social Meta Tags -->
-  <link rel="icon" type="image/png" href="logo.png">
-  <link rel="apple-touch-icon" href="logo.png">
-  <meta property="og:title" content="Octave - Web Music Player">
-  <meta property="og:image" content="logo.png">
-
   <style>
     :root {
-      --bg-dark: #07040d;
-      --panel-bg: rgba(23, 15, 38, 0.65);
-      --border-light: rgba(192, 132, 252, 0.15);
+      --bg-color: #07040d;
       --accent-cyan: #38bdf8;
       --accent-purple: #c084fc;
       --accent-magenta: #e879f9;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
+      --bar-bg: rgba(255, 255, 255, 0.1);
     }
 
     * {
@@ -30,174 +21,90 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-dark);
-      background-image: 
-        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 80%, rgba(192, 132, 252, 0.08) 0%, transparent 40%);
-      color: var(--text-main);
-      min-height: 100vh;
+      background-color: var(--bg-color);
+      height: 100vh;
+      width: 100vw;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Glassmorphic Container */
-    .player-card {
-      width: 100%;
-      max-width: 420px;
-      background: var(--panel-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--border-light);
-      border-radius: 28px;
-      padding: 32px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(192, 132, 252, 0.05);
+    /* Centered Splash Container */
+    .splash-container {
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
+      gap: 40px;
     }
 
-    /* Animated Vector Logo Container */
+    /* Pulsing Logo */
     .logo-wrapper {
-      width: 140px;
-      height: 140px;
-      margin-bottom: 28px;
-      position: relative;
-      cursor: pointer;
-      transition: transform 0.3s ease;
+      width: 160px;
+      height: 160px;
+      animation: pulse 2.5s ease-in-out infinite;
     }
 
-    .logo-wrapper:hover {
-      transform: scale(1.04);
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.25));
+      }
+      50% {
+        transform: scale(1.04);
+        filter: drop-shadow(0 0 35px rgba(192, 132, 252, 0.5));
+      }
     }
 
     .logo-svg {
       width: 100%;
       height: 100%;
-      filter: drop-shadow(0 8px 24px rgba(192, 132, 252, 0.3));
     }
 
-    /* Song & Artist Info */
-    .track-info {
-      text-align: center;
-      margin-bottom: 24px;
+    /* Loading Bar Area */
+    .loader-container {
+      width: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .progress-track {
       width: 100%;
-    }
-
-    .track-title {
-      font-size: 1.4rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 6px;
-      white-space: nowrap;
+      height: 4px;
+      background: var(--bar-bg);
+      border-radius: 8px;
       overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .artist-name {
-      font-size: 0.95rem;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    /* Scrubber / Progress Bar */
-    .progress-container {
-      width: 100%;
-      margin-bottom: 28px;
-    }
-
-    .progress-bar-wrapper {
-      width: 100%;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
       position: relative;
     }
 
-    .progress-fill {
-      width: 35%;
+    .progress-bar {
+      width: 0%;
       height: 100%;
-      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
-      border-radius: 10px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-magenta));
+      border-radius: 8px;
+      transition: width 0.15s linear;
     }
 
-    .time-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-top: 8px;
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Controls Layout */
-    .controls {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      width: 100%;
-    }
-
-    .btn {
-      background: none;
-      border: none;
-      color: var(--text-main);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      outline: none;
-    }
-
-    .btn:hover {
-      color: var(--accent-purple);
-      transform: scale(1.1);
-    }
-
-    .btn-secondary {
-      width: 40px;
-      height: 40px;
-      opacity: 0.8;
-    }
-
-    .btn-primary {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent-purple), var(--accent-magenta));
-      color: #ffffff;
-      box-shadow: 0 6px 20px rgba(192, 132, 252, 0.4);
-    }
-
-    .btn-primary:hover {
-      color: #ffffff;
-      transform: scale(1.06);
-      box-shadow: 0 8px 28px rgba(192, 132, 252, 0.6);
-    }
-
-    /* Footer Branding */
-    .footer-tag {
-      margin-top: 24px;
+    .status-text {
+      color: rgba(255, 255, 255, 0.5);
       font-size: 0.8rem;
-      color: var(--text-muted);
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
+      font-weight: 500;
     }
   </style>
 </head>
 <body>
 
-  <main class="player-card">
+  <div class="splash-container">
     
-    <!-- Embedded Octave Vector Icon -->
-    <div class="logo-wrapper" title="Octave Logo">
+    <!-- Octave App Logo -->
+    <div class="logo-wrapper">
       <svg class="logo-svg" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <radialGradient id="octaveBg" cx="50%" cy="40%" r="70%">
@@ -216,10 +123,10 @@
           </filter>
         </defs>
 
-        <!-- Obsidian Squircle Base -->
+        <!-- Obsidian Base Squircle -->
         <rect x="16" y="16" width="480" height="480" rx="115" fill="url(#octaveBg)" stroke="#c084fc" stroke-opacity="0.25" stroke-width="3" />
 
-        <!-- Radial Equalizer 'O' Mark -->
+        <!-- Radial Equalizer Symbol -->
         <g filter="url(#glowEffect)" stroke="url(#octaveNeon)" stroke-width="14" stroke-linecap="round">
           <line x1="256" y1="181" x2="256" y2="116" />
           <line x1="318" y1="197" x2="380" y2="161" />
@@ -235,52 +142,45 @@
           <line x1="290" y1="186" x2="313" y2="116" />
         </g>
 
-        <!-- Pulse Core -->
+        <!-- Center Pulse -->
         <circle cx="256" cy="256" r="16" fill="#ffffff" filter="url(#glowEffect)" />
       </svg>
     </div>
 
-    <!-- Track Information -->
-    <div class="track-info">
-      <h1 class="track-title">Midnight Resonance</h1>
-      <p class="artist-name">Octave Audio Engine</p>
-    </div>
-
-    <!-- Timeline Scrubber -->
-    <div class="progress-container">
-      <div class="progress-bar-wrapper">
-        <div class="progress-fill"></div>
+    <!-- Progress / Loading Bar -->
+    <div class="loader-container">
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
       </div>
-      <div class="time-labels">
-        <span>1:12</span>
-        <span>3:45</span>
-      </div>
+      <div class="status-text" id="statusText">Loading...</div>
     </div>
 
-    <!-- Controls -->
-    <div class="controls">
-      <button class="btn btn-secondary" aria-label="Previous Track">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
-        </svg>
-      </button>
+  </div>
 
-      <button class="btn btn-primary" aria-label="Play Track">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M8 5v14l11-7z"/>
-        </svg>
-      </button>
-
-      <button class="btn btn-secondary" aria-label="Next Track">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M16 18h2V6h-2zm-11.5 0L13 12 4.5 6z"/>
-        </svg>
-      </button>
-    </div>
-
-    <div class="footer-tag">Hosted on GitHub Pages</div>
-
-  </main>
+  <script>
+    // Simulated Progress Tracker
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('statusText');
+    
+    let progress = 0;
+    
+    const interval = setInterval(() => {
+      // Increments with slight random variance for a natural feel
+      progress += Math.floor(Math.random() * 8) + 2;
+      
+      if (progress >= 100) {
+        progress = 100;
+        progressBar.style.width = '100%';
+        statusText.textContent = 'Ready';
+        clearInterval(interval);
+        
+        // Redirect or show main content here when finished loading:
+        // setTimeout(() => { window.location.href = "app.html"; }, 300);
+      } else {
+        progressBar.style.width = progress + '%';
+      }
+    }, 120);
+  </script>
 
 </body>
 </html>
