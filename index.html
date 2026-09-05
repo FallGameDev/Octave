@@ -25,65 +25,6 @@
     body { background-color: var(--bg-base); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
 
     /* ========================================================= */
-    /* LOGGED-IN LOADING SPLASH SCREEN (Hidden by Default)       */
-    /* ========================================================= */
-    #splash-screen {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: var(--bg-base);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      transition: opacity 0.4s ease, visibility 0.4s ease;
-    }
-
-    .splash-logo-wrapper {
-      width: 140px;
-      height: 140px;
-      margin-bottom: 24px;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.3)); }
-      50% { transform: scale(1.05); filter: drop-shadow(0 0 35px rgba(168, 85, 247, 0.6)); }
-    }
-
-    .loader-container {
-      width: 220px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .progress-track {
-      width: 100%;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent-cyan), var(--primary), var(--accent-magenta));
-      border-radius: 8px;
-      transition: width 0.2s linear;
-    }
-
-    .status-text {
-      color: var(--text-sub);
-      font-size: 0.8rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      font-weight: 500;
-    }
-
-    /* ========================================================= */
     /* MAIN APP LAYOUT                                           */
     /* ========================================================= */
     #sidebar { width: 240px; background-color: #040208; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; flex-shrink: 0; }
@@ -149,54 +90,6 @@
 </head>
 <body>
 
-  <!-- Splash Screen (Only shows after logging in) -->
-  <div id="splash-screen" class="hidden">
-    <div class="splash-logo-wrapper">
-      <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
-        <defs>
-          <radialGradient id="octaveBg" cx="50%" cy="40%" r="70%">
-            <stop offset="0%" stop-color="#1a102f" />
-            <stop offset="60%" stop-color="#0d0718" />
-            <stop offset="100%" stop-color="#05020a" />
-          </radialGradient>
-          <linearGradient id="octaveNeon" x1="20%" y1="20%" x2="80%" y2="80%">
-            <stop offset="0%" stop-color="#38bdf8" />
-            <stop offset="50%" stop-color="#a855f7" />
-            <stop offset="100%" stop-color="#e879f9" />
-          </linearGradient>
-          <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="12" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
-        <rect x="16" y="16" width="480" height="480" rx="115" fill="url(#octaveBg)" stroke="#a855f7" stroke-opacity="0.25" stroke-width="3" />
-        <g filter="url(#glowEffect)" stroke="url(#octaveNeon)" stroke-width="14" stroke-linecap="round">
-          <line x1="256" y1="181" x2="256" y2="116" />
-          <line x1="318" y1="197" x2="380" y2="161" />
-          <line x1="358" y1="237" x2="411" y2="252" />
-          <line x1="358" y1="275" x2="437" y2="323" />
-          <line x1="318" y1="315" x2="368" y2="401" />
-          <line x1="256" y1="331" x2="256" y2="431" />
-          <line x1="194" y1="315" x2="148" y2="395" />
-          <line x1="154" y1="275" x2="79" y2="320" />
-          <line x1="154" y1="237" x2="104" y2="223" />
-          <line x1="194" y1="197" x2="135" y2="138" />
-          <line x1="222" y1="186" x2="208" y2="138" />
-          <line x1="290" y1="186" x2="313" y2="116" />
-        </g>
-        <circle cx="256" cy="256" r="16" fill="#ffffff" filter="url(#glowEffect)" />
-      </svg>
-    </div>
-
-    <div class="loader-container">
-      <div class="progress-track">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <div class="status-text" id="statusText">Loading tracks...</div>
-    </div>
-  </div>
-
-  <!-- Sidebar -->
   <div id="sidebar">
     <div class="brand">
       <img src="logo.png" alt="Octave Logo" class="sidebar-logo-img" onerror="this.style.display='none'">
@@ -219,10 +112,8 @@
     </div>
   </div>
 
-  <!-- Main View -->
   <div id="main-view">
     
-    <!-- Authentication Form (Shows immediately if not logged in) -->
     <div id="view-auth" class="form-container">
       <h2 id="auth-title">Log in to Octave</h2>
       <form id="auth-form" onsubmit="handleAuth(event)">
@@ -239,13 +130,11 @@
       </form>
     </div>
 
-    <!-- Song Library -->
     <div id="view-library" class="hidden">
       <h2 id="library-title">All Tracks</h2>
       <div id="song-grid" class="card-grid"></div>
     </div>
 
-    <!-- User Profile View -->
     <div id="view-profile" class="hidden">
       <div class="profile-header">
         <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
@@ -258,7 +147,6 @@
       <div id="profile-song-grid" class="card-grid"></div>
     </div>
 
-    <!-- Upload Music -->
     <div id="view-upload" class="form-container hidden">
       <h2>Upload to Octave</h2>
       <form onsubmit="handleUpload(event)">
@@ -289,7 +177,6 @@
       </form>
     </div>
 
-    <!-- Create Playlist -->
     <div id="view-create-playlist" class="form-container hidden">
       <h2>Create New Playlist</h2>
       <form onsubmit="handleCreatePlaylist(event)">
@@ -301,7 +188,6 @@
       </form>
     </div>
 
-    <!-- Account Settings -->
     <div id="view-settings" class="form-container hidden">
       <h2>Account Settings</h2>
       <form onsubmit="handleUpdateSettings(event)">
@@ -323,7 +209,6 @@
 
   </div>
 
-  <!-- Edit Song Modal -->
   <div id="edit-modal" class="modal-overlay hidden">
     <div class="form-container" style="margin:0;">
       <h2>Edit Song</h2>
@@ -354,7 +239,6 @@
     </div>
   </div>
 
-  <!-- Player Controls Bar -->
   <div id="player-bar">
     <div class="now-playing">
       <div id="player-cover" class="now-playing-img">🎵</div>
@@ -377,52 +261,16 @@
     let allSongs = [];
     let playlists = JSON.parse(localStorage.getItem('octave_playlists')) || {};
 
-    window.addEventListener('DOMContentLoaded', () => {
-      // Direct access check: If session exists, load tracks with splash loader
+    window.addEventListener('DOMContentLoaded', async () => {
       if (currentUser) {
         updateUserBadge();
-        startLoggedSession();
+        await fetchSongs();
+        renderPlaylistsNav();
+        showView('library');
       } else {
         showView('auth');
       }
     });
-
-    // Triggers loading bar screen after authentication/session confirmation
-    async function startLoggedSession() {
-      const splash = document.getElementById('splash-screen');
-      const progressBar = document.getElementById('progressBar');
-      const statusText = document.getElementById('statusText');
-
-      splash.classList.remove('hidden');
-      splash.style.opacity = '1';
-      splash.style.visibility = 'visible';
-
-      // 1. Progress: Preparing session
-      updateProgress(20, "Loading account...");
-      
-      // 2. Fetch tracks from backend API
-      updateProgress(45, "Loading library & tracks...");
-      await fetchSongs();
-
-      // 3. Progress: Finalizing UI setup
-      updateProgress(85, "Building player...");
-      renderPlaylistsNav();
-
-      // 4. Finished
-      updateProgress(100, "Ready!");
-
-      setTimeout(() => {
-        splash.style.opacity = '0';
-        splash.style.visibility = 'hidden';
-        setTimeout(() => splash.classList.add('hidden'), 400);
-        showView('library');
-      }, 300);
-    }
-
-    function updateProgress(percent, text) {
-      document.getElementById('progressBar').style.width = percent + '%';
-      document.getElementById('statusText').innerText = text;
-    }
 
     function stringToColor(str) {
       if (!str) return '#2a1840';
@@ -490,7 +338,9 @@
           currentUser = res.user;
           localStorage.setItem('octave_user', JSON.stringify(currentUser));
           updateUserBadge();
-          startLoggedSession(); // Trigger loading screen & fetch data
+          await fetchSongs();
+          renderPlaylistsNav();
+          showView('library');
         } else { 
           alert(res.message || "Authentication failed."); 
         }
@@ -606,7 +456,7 @@
 
       if (!fileInput) return;
       uploadBtn.disabled = true;
-      uploadBtn.innerText = "Uploading Base64...";
+      uploadBtn.innerText = "Uploading...";
 
       const coverBase64 = await fileToBase64(coverInput);
       const audioBase64 = await fileToBase64(fileInput);
@@ -663,7 +513,7 @@
       const btn = document.getElementById('edit-save-btn');
 
       btn.disabled = true;
-      btn.innerText = "Saving Base64...";
+      btn.innerText = "Saving...";
 
       const coverBase64 = coverFile ? await fileToBase64(coverFile) : null;
 
@@ -677,121 +527,4 @@
             title, 
             artist, 
             releaseType, 
-            cover: coverBase64, 
-            uploader: currentUser.username 
-          })
-        }).then(r => r.json());
-
-        if (res.status === "success") {
-          alert("Song updated!");
-          closeEditModal();
-          await fetchSongs();
-          showView('library');
-        } else alert(res.message);
-      } catch (err) { alert("Failed to edit song."); }
-      finally { btn.disabled = false; btn.innerText = "Save Changes"; }
-    }
-
-    function handleCreatePlaylist(e) {
-      if (e) e.preventDefault();
-      const name = document.getElementById('playlist-name').value;
-      if (!playlists[name]) {
-        playlists[name] = [];
-        localStorage.setItem('octave_playlists', JSON.stringify(playlists));
-        document.getElementById('playlist-name').value = "";
-        renderPlaylistsNav();
-        showView('library', name);
-      } else alert("Playlist already exists!");
-    }
-
-    function renderPlaylistsNav() {
-      const container = document.getElementById('playlist-nav-list');
-      container.innerHTML = "";
-      Object.keys(playlists).forEach(name => {
-        const item = document.createElement('div');
-        item.className = 'nav-item';
-        item.innerText = name;
-        item.onclick = () => showView('library', name);
-        container.appendChild(item);
-      });
-    }
-
-    function addToPlaylist(e, song) {
-      e.stopPropagation();
-      const pName = prompt(`Enter playlist name to add "${song.title}":\nExisting: ${Object.keys(playlists).join(', ')}`);
-      if (pName) {
-        if (!playlists[pName]) playlists[pName] = [];
-        if (!playlists[pName].some(s => s.id === song.id)) {
-          playlists[pName].push(song);
-          localStorage.setItem('octave_playlists', JSON.stringify(playlists));
-          renderPlaylistsNav();
-          alert("Added to playlist!");
-        } else alert("Song already in playlist.");
-      }
-    }
-
-    async function fetchSongs() {
-      try {
-        const res = await fetch(`${SCRIPT_URL}?action=getSongs`).then(r => r.json());
-        if (res.status === "success") {
-          allSongs = res.songs || [];
-        }
-      } catch (err) { 
-        console.error("Failed to load tracks:", err); 
-      }
-    }
-
-    function renderSongs(songs, container) {
-      container.innerHTML = "";
-      if (songs.length === 0) { container.innerHTML = "No tracks found."; return; }
-
-      songs.forEach(song => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        
-        const coverHtml = song.cover && song.cover.startsWith('data:image') 
-          ? `<div class="card-img"><img src="${song.cover}" alt="Cover"></div>` 
-          : `<div class="card-img">🎵</div>`;
-
-        const creator = song.uploader || song.artist || "Unknown";
-        const isOwner = currentUser && (song.uploader === currentUser.username || song.artist === currentUser.username);
-
-        card.innerHTML = `
-          <div class="card-badge">${song.releaseType || 'Single'}</div>
-          ${coverHtml}
-          <div class="card-title">${song.title}</div>
-          <div class="card-sub">${song.artist}</div>
-          <div><a class="creator-link">By @${creator}</a></div>
-          <div class="card-actions">
-            <button class="btn-sm btn-playlist">+ Playlist</button>
-            ${isOwner ? `<button class="btn-sm btn-edit">✎ Edit</button>` : ''}
-          </div>
-        `;
-
-        card.querySelector('.creator-link').onclick = (e) => {
-          e.stopPropagation();
-          showView('profile', null, creator);
-        };
-        card.querySelector('.btn-playlist').onclick = (e) => addToPlaylist(e, song);
-        if (isOwner) card.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(song); };
-        card.onclick = () => playSong(song);
-        container.appendChild(card);
-      });
-    }
-
-    function playSong(song) {
-      document.getElementById('player-title').innerText = song.title;
-      document.getElementById('player-artist').innerText = song.artist;
-      const coverEl = document.getElementById('player-cover');
-      
-      if (song.cover && song.cover.startsWith('data:image')) {
-        coverEl.innerHTML = `<img src="${song.cover}" />`;
-      } else coverEl.innerHTML = "🎵";
-
-      const player = document.getElementById('audio-element');
-      player.src = song.audio;
-      player.play();
-    }
-  </script>
-</body>
-</html>
+            cover: coverBase
