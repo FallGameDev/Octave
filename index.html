@@ -86,7 +86,6 @@
 </head>
 <body>
 
-  <!-- Sidebar -->
   <div id="sidebar">
     <div class="brand">
       <img src="logo.png" alt="Octave Logo" class="sidebar-logo-img" onerror="this.style.display='none'">
@@ -109,11 +108,9 @@
     </div>
   </div>
 
-  <!-- Main View -->
   <div id="main-view">
     
-    <!-- Authentication Form -->
-    <div id="view-auth" class="form-container">
+    <div id="view-auth" class="form-container hidden">
       <h2 id="auth-title">Log in to Octave</h2>
       <form id="auth-form" onsubmit="event.preventDefault(); handleAuth();">
         <div class="form-group">
@@ -129,13 +126,11 @@
       </form>
     </div>
 
-    <!-- Song Library -->
     <div id="view-library" class="hidden">
       <h2 id="library-title">All Tracks</h2>
       <div id="song-grid" class="card-grid"></div>
     </div>
 
-    <!-- User Profile View -->
     <div id="view-profile" class="hidden">
       <div class="profile-header">
         <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
@@ -148,7 +143,6 @@
       <div id="profile-song-grid" class="card-grid"></div>
     </div>
 
-    <!-- Upload Music -->
     <div id="view-upload" class="form-container hidden">
       <h2>Upload to Octave</h2>
       <form onsubmit="event.preventDefault(); handleUpload();">
@@ -179,7 +173,6 @@
       </form>
     </div>
 
-    <!-- Create Playlist -->
     <div id="view-create-playlist" class="form-container hidden">
       <h2>Create New Playlist</h2>
       <form onsubmit="event.preventDefault(); handleCreatePlaylist();">
@@ -191,7 +184,6 @@
       </form>
     </div>
 
-    <!-- Account Settings -->
     <div id="view-settings" class="form-container hidden">
       <h2>Account Settings</h2>
       <form onsubmit="event.preventDefault(); handleUpdateSettings();">
@@ -213,7 +205,6 @@
 
   </div>
 
-  <!-- Edit Song Modal -->
   <div id="edit-modal" class="modal-overlay hidden">
     <div class="form-container" style="margin:0;">
       <h2>Edit Song</h2>
@@ -244,7 +235,6 @@
     </div>
   </div>
 
-  <!-- Player Controls Bar -->
   <div id="player-bar">
     <div class="now-playing">
       <div id="player-cover" class="now-playing-img">🎵</div>
@@ -267,7 +257,8 @@
     let allSongs = [];
     let playlists = {};
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => {
+      // Synchronously retrieve persistent local data
       try {
         const storedUser = localStorage.getItem('octave_user');
         if (storedUser) currentUser = JSON.parse(storedUser);
@@ -278,11 +269,12 @@
         console.error("Error reading LocalStorage", err);
       }
 
+      // Immediately log in and render without waiting or showing a loading UI
       if (currentUser) {
         updateUserBadge();
-        await fetchSongs();
         renderPlaylistsNav();
         showView('library');
+        fetchSongs(); // Fetch latest track library in background asynchronously
       } else {
         showView('auth');
       }
@@ -297,7 +289,6 @@
       return color;
     }
 
-    /* Client-side Image Compression & Resizing to prevent Apps Script timeouts */
     const compressImage = (file, maxSide = 250, quality = 0.7) => new Promise((resolve) => {
       if (!file) return resolve("");
       const reader = new FileReader();
@@ -471,7 +462,7 @@
       const settingsBtn = document.getElementById('settings-btn');
 
       settingsBtn.disabled = true;
-      settingsBtn.innerText = "Compressing & Saving...";
+      settingsBtn.innerText = "Saving...";
 
       let newPfpBase64 = currentUser.pfp || "DEFAULT";
       if (pfpFile) {
@@ -501,7 +492,7 @@
           alert(res.message || "Failed to update settings."); 
         }
       } catch (err) { 
-        alert("Update failed. Image payload may still be too large."); 
+        alert("Update failed."); 
       } finally { 
         settingsBtn.disabled = false; 
         settingsBtn.innerText = "Save Changes"; 
@@ -645,6 +636,10 @@
         const res = await fetch(`${SCRIPT_URL}?action=getSongs`).then(r => r.json());
         if (res.status === "success") {
           allSongs = res.songs || [];
+          const currentViewHidden = document.getElementById('view-library').classList.contains('hidden');
+          if (!currentViewHidden) {
+            renderSongs(allSongs, document.getElementById('song-grid'));
+          }
         }
       } catch (err) { 
         console.error("Failed to load tracks:", err); 
