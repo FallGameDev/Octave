@@ -3,68 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Octave</title>
+  <title>Octave - Web Player</title>
   
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+
   <style>
     :root {
-      --bg-color: #07040d;
+      --bg-base: #07040d;
+      --bg-surface: #180d26;
+      --bg-highlight: #2a1840;
+      --primary: #a855f7;
+      --primary-hover: #9333ea;
       --accent-cyan: #38bdf8;
-      --accent-purple: #c084fc;
       --accent-magenta: #e879f9;
-      --bar-bg: rgba(255, 255, 255, 0.1);
+      --text-main: #ffffff;
+      --text-sub: #a799be;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-base); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
 
-    body {
-      background-color: var(--bg-color);
-      height: 100vh;
-      width: 100vw;
+    /* ========================================================= */
+    /* LOGGED-IN LOADING SPLASH SCREEN (Hidden by Default)       */
+    /* ========================================================= */
+    #splash-screen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--bg-base);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      z-index: 1000;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
     }
 
-    /* Centered Splash Container */
-    .splash-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 40px;
-    }
-
-    /* Pulsing Logo */
-    .logo-wrapper {
-      width: 160px;
-      height: 160px;
-      animation: pulse 2.5s ease-in-out infinite;
+    .splash-logo-wrapper {
+      width: 140px;
+      height: 140px;
+      margin-bottom: 24px;
+      animation: pulse 2s ease-in-out infinite;
     }
 
     @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 20px rgba(192, 132, 252, 0.25));
-      }
-      50% {
-        transform: scale(1.04);
-        filter: drop-shadow(0 0 35px rgba(192, 132, 252, 0.5));
-      }
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.3)); }
+      50% { transform: scale(1.05); filter: drop-shadow(0 0 35px rgba(168, 85, 247, 0.6)); }
     }
 
-    .logo-svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Loading Bar Area */
     .loader-container {
       width: 220px;
       display: flex;
@@ -76,36 +62,97 @@
     .progress-track {
       width: 100%;
       height: 4px;
-      background: var(--bar-bg);
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       overflow: hidden;
-      position: relative;
     }
 
     .progress-bar {
       width: 0%;
       height: 100%;
-      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple), var(--accent-magenta));
+      background: linear-gradient(90deg, var(--accent-cyan), var(--primary), var(--accent-magenta));
       border-radius: 8px;
-      transition: width 0.15s linear;
+      transition: width 0.2s linear;
     }
 
     .status-text {
-      color: rgba(255, 255, 255, 0.5);
+      color: var(--text-sub);
       font-size: 0.8rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       font-weight: 500;
     }
+
+    /* ========================================================= */
+    /* MAIN APP LAYOUT                                           */
+    /* ========================================================= */
+    #sidebar { width: 240px; background-color: #040208; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; flex-shrink: 0; }
+    .brand { font-size: 1.5rem; font-weight: bold; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo-img { height: 32px; width: auto; object-fit: contain; }
+    .nav-item { color: var(--text-sub); text-decoration: none; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .nav-item:hover, .nav-item.active { color: var(--text-main); }
+    
+    .section-divider { border-top: 1px solid var(--bg-highlight); margin: 8px 0; }
+    .playlist-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 200px; }
+
+    .user-profile { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--bg-highlight); cursor: pointer; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background-color: var(--bg-highlight); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.1rem; text-transform: uppercase; flex-shrink: 0; }
+
+    /* Profile Header */
+    .profile-header { display: flex; align-items: center; gap: 24px; background-color: var(--bg-surface); padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+    .profile-avatar-lg { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; background-color: var(--bg-highlight); flex-shrink: 0; background-size: cover; background-position: center; }
+
+    /* Main Area */
+    #main-view { flex: 1; background: linear-gradient(to bottom, #1d0c2e, var(--bg-base)); padding: 32px; overflow-y: auto; padding-bottom: 120px; }
+    h2 { margin-bottom: 16px; }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
+    .card { background-color: var(--bg-surface); padding: 16px; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; position: relative; }
+    .card:hover { background-color: var(--bg-highlight); }
+    .card-img { width: 100%; aspect-ratio: 1; border-radius: 4px; object-fit: cover; background-color: var(--bg-highlight); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .card-title { font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-sub { color: var(--text-sub); font-size: 0.85rem; }
+    .creator-link { font-size: 0.75rem; color: var(--primary); text-decoration: none; display: inline-block; margin-top: 4px; cursor: pointer; font-weight: 500; }
+    .creator-link:hover { text-decoration: underline; color: var(--primary-hover); }
+    .card-badge { position: absolute; top: 24px; right: 24px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; text-transform: uppercase; }
+
+    .card-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .btn-sm { padding: 4px 8px; font-size: 0.75rem; background: var(--bg-highlight); border: none; color: white; border-radius: 4px; cursor: pointer; }
+    .btn-sm:hover { background: var(--primary); }
+
+    /* Forms */
+    .form-container { max-width: 450px; margin: 40px auto; background-color: var(--bg-surface); padding: 32px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 8px; color: var(--text-sub); font-size: 0.85rem; }
+    .form-group input, .form-group select { width: 100%; padding: 12px; background: #221236; border: 1px solid transparent; border-radius: 4px; color: white; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
+    
+    .btn { width: 100%; padding: 12px; background-color: var(--primary); color: white; font-weight: bold; border: none; border-radius: 50px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+    .btn:hover { background-color: var(--primary-hover); transform: scale(1.02); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--text-sub); margin-top: 8px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+
+    /* Bottom Player Bar */
+    #player-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 90px; background-color: #0a0512; border-top: 1px solid #1f0f33; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 10; }
+    .now-playing { display: flex; align-items: center; gap: 12px; width: 30%; }
+    .now-playing-img { width: 56px; height: 56px; border-radius: 4px; object-fit: cover; background-color: var(--bg-highlight); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .now-playing-img img { width: 100%; height: 100%; object-fit: cover; }
+    .player-controls { display: flex; flex-direction: column; align-items: center; width: 40%; gap: 8px; }
+    audio { width: 100%; height: 32px; filter: invert(80%) hue-rotate(220deg); }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <div class="splash-container">
-    
-    <!-- Octave App Logo -->
-    <div class="logo-wrapper">
-      <svg class="logo-svg" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Splash Screen (Only shows after logging in) -->
+  <div id="splash-screen" class="hidden">
+    <div class="splash-logo-wrapper">
+      <svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:100%;">
         <defs>
           <radialGradient id="octaveBg" cx="50%" cy="40%" r="70%">
             <stop offset="0%" stop-color="#1a102f" />
@@ -114,7 +161,7 @@
           </radialGradient>
           <linearGradient id="octaveNeon" x1="20%" y1="20%" x2="80%" y2="80%">
             <stop offset="0%" stop-color="#38bdf8" />
-            <stop offset="50%" stop-color="#c084fc" />
+            <stop offset="50%" stop-color="#a855f7" />
             <stop offset="100%" stop-color="#e879f9" />
           </linearGradient>
           <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
@@ -122,11 +169,7 @@
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
         </defs>
-
-        <!-- Obsidian Base Squircle -->
-        <rect x="16" y="16" width="480" height="480" rx="115" fill="url(#octaveBg)" stroke="#c084fc" stroke-opacity="0.25" stroke-width="3" />
-
-        <!-- Radial Equalizer Symbol -->
+        <rect x="16" y="16" width="480" height="480" rx="115" fill="url(#octaveBg)" stroke="#a855f7" stroke-opacity="0.25" stroke-width="3" />
         <g filter="url(#glowEffect)" stroke="url(#octaveNeon)" stroke-width="14" stroke-linecap="round">
           <line x1="256" y1="181" x2="256" y2="116" />
           <line x1="318" y1="197" x2="380" y2="161" />
@@ -141,46 +184,614 @@
           <line x1="222" y1="186" x2="208" y2="138" />
           <line x1="290" y1="186" x2="313" y2="116" />
         </g>
-
-        <!-- Center Pulse -->
         <circle cx="256" cy="256" r="16" fill="#ffffff" filter="url(#glowEffect)" />
       </svg>
     </div>
 
-    <!-- Progress / Loading Bar -->
     <div class="loader-container">
       <div class="progress-track">
         <div class="progress-bar" id="progressBar"></div>
       </div>
-      <div class="status-text" id="statusText">Loading...</div>
+      <div class="status-text" id="statusText">Loading tracks...</div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="brand">
+      <img src="logo.png" alt="Octave Logo" class="sidebar-logo-img" onerror="this.style.display='none'">
+      <span>Octave</span>
+    </div>
+    <div class="nav-item active" id="nav-library" onclick="showView('library')">Home / Library</div>
+    <div class="nav-item" id="nav-profile" onclick="showView('profile')">View Profile</div>
+    <div class="nav-item" id="nav-upload" onclick="showView('upload')">Upload Music</div>
+    <div class="nav-item" id="nav-create-playlist" onclick="showView('create-playlist')">+ Create Playlist</div>
+    <div class="nav-item hidden" id="nav-settings" onclick="showView('settings')">Account Settings</div>
+    
+    <div class="section-divider"></div>
+    <div style="color: var(--text-sub); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">Playlists</div>
+    <div class="playlist-list" id="playlist-nav-list"></div>
+
+    <div class="user-profile hidden" id="user-badge" onclick="showView('profile')">
+      <div id="user-avatar" class="avatar"></div>
+      <span id="user-name" style="font-weight: 600;"></span>
+      <span onclick="event.stopPropagation(); logout();" style="margin-left:auto; cursor:pointer; color:var(--text-sub); font-size:0.8rem;">Exit</span>
+    </div>
+  </div>
+
+  <!-- Main View -->
+  <div id="main-view">
+    
+    <!-- Authentication Form (Shows immediately if not logged in) -->
+    <div id="view-auth" class="form-container">
+      <h2 id="auth-title">Log in to Octave</h2>
+      <form id="auth-form" onsubmit="handleAuth(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="auth-username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="auth-password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn" id="auth-submit">Log In</button>
+        <button type="button" class="btn btn-secondary" onclick="toggleAuthMode()" id="auth-toggle">Need an account? Register</button>
+      </form>
+    </div>
+
+    <!-- Song Library -->
+    <div id="view-library" class="hidden">
+      <h2 id="library-title">All Tracks</h2>
+      <div id="song-grid" class="card-grid"></div>
+    </div>
+
+    <!-- User Profile View -->
+    <div id="view-profile" class="hidden">
+      <div class="profile-header">
+        <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
+        <div>
+          <h1 id="profile-username" style="font-size: 2rem;"></h1>
+          <p style="color: var(--text-sub);" id="profile-subtitle">Artist Profile</p>
+        </div>
+      </div>
+      <h2>Uploaded Tracks</h2>
+      <div id="profile-song-grid" class="card-grid"></div>
+    </div>
+
+    <!-- Upload Music -->
+    <div id="view-upload" class="form-container hidden">
+      <h2>Upload to Octave</h2>
+      <form onsubmit="handleUpload(event)">
+        <div class="form-group">
+          <label>Release Type</label>
+          <select id="song-type">
+            <option value="Single">Single</option>
+            <option value="Album">Album Track</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Track Title</label>
+          <input type="text" id="song-title" required>
+        </div>
+        <div class="form-group">
+          <label>Artist / Album Name</label>
+          <input type="text" id="song-artist" required>
+        </div>
+        <div class="form-group">
+          <label>Cover Art / Icon (Image File)</label>
+          <input type="file" id="song-cover" accept="image/*">
+        </div>
+        <div class="form-group">
+          <label>Audio File</label>
+          <input type="file" id="song-file" accept="audio/*" required>
+        </div>
+        <button type="submit" class="btn" id="upload-btn">Upload Music</button>
+      </form>
+    </div>
+
+    <!-- Create Playlist -->
+    <div id="view-create-playlist" class="form-container hidden">
+      <h2>Create New Playlist</h2>
+      <form onsubmit="handleCreatePlaylist(event)">
+        <div class="form-group">
+          <label>Playlist Name</label>
+          <input type="text" id="playlist-name" required>
+        </div>
+        <button type="submit" class="btn">Create Playlist</button>
+      </form>
+    </div>
+
+    <!-- Account Settings -->
+    <div id="view-settings" class="form-container hidden">
+      <h2>Account Settings</h2>
+      <form onsubmit="handleUpdateSettings(event)">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="settings-username" required>
+        </div>
+        <div class="form-group">
+          <label>New Password (Leave blank to keep current)</label>
+          <input type="password" id="settings-password" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Profile Picture (Upload Image)</label>
+          <input type="file" id="settings-pfp-file" accept="image/*">
+        </div>
+        <button type="submit" class="btn" id="settings-btn">Save Changes</button>
+      </form>
     </div>
 
   </div>
 
-  <script>
-    // Simulated Progress Tracker
-    const progressBar = document.getElementById('progressBar');
-    const statusText = document.getElementById('statusText');
-    
-    let progress = 0;
-    
-    const interval = setInterval(() => {
-      // Increments with slight random variance for a natural feel
-      progress += Math.floor(Math.random() * 8) + 2;
-      
-      if (progress >= 100) {
-        progress = 100;
-        progressBar.style.width = '100%';
-        statusText.textContent = 'Ready';
-        clearInterval(interval);
-        
-        // Redirect or show main content here when finished loading:
-        // setTimeout(() => { window.location.href = "app.html"; }, 300);
-      } else {
-        progressBar.style.width = progress + '%';
-      }
-    }, 120);
-  </script>
+  <!-- Edit Song Modal -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="form-container" style="margin:0;">
+      <h2>Edit Song</h2>
+      <form onsubmit="handleSaveSongEdit(event)">
+        <input type="hidden" id="edit-song-id">
+        <div class="form-group">
+          <label>Release Type</label>
+          <select id="edit-song-type">
+            <option value="Single">Single</option>
+            <option value="Album">Album Track</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Track Title</label>
+          <input type="text" id="edit-song-title" required>
+        </div>
+        <div class="form-group">
+          <label>Artist Name</label>
+          <input type="text" id="edit-song-artist" required>
+        </div>
+        <div class="form-group">
+          <label>New Cover Art / Icon (Image File)</label>
+          <input type="file" id="edit-song-cover" accept="image/*">
+        </div>
+        <button type="submit" class="btn" id="edit-save-btn">Save Changes</button>
+        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
 
+  <!-- Player Controls Bar -->
+  <div id="player-bar">
+    <div class="now-playing">
+      <div id="player-cover" class="now-playing-img">🎵</div>
+      <div>
+        <div id="player-title" style="font-weight: bold;">Select a track</div>
+        <div id="player-artist" style="color: var(--text-sub); font-size: 0.85rem;">-</div>
+      </div>
+    </div>
+    <div class="player-controls">
+      <audio id="audio-element" controls></audio>
+    </div>
+    <div style="width: 30%;"></div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUu2rMh1DahI0Ekhs9SA2C5eXcJhPH6diNELV0viHNxfoQ3yhiayL_tF68lqSpOIpd/exec";
+
+    let currentUser = JSON.parse(localStorage.getItem('octave_user')) || null;
+    let isRegisterMode = false;
+    let allSongs = [];
+    let playlists = JSON.parse(localStorage.getItem('octave_playlists')) || {};
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Direct access check: If session exists, load tracks with splash loader
+      if (currentUser) {
+        updateUserBadge();
+        startLoggedSession();
+      } else {
+        showView('auth');
+      }
+    });
+
+    // Triggers loading bar screen after authentication/session confirmation
+    async function startLoggedSession() {
+      const splash = document.getElementById('splash-screen');
+      const progressBar = document.getElementById('progressBar');
+      const statusText = document.getElementById('statusText');
+
+      splash.classList.remove('hidden');
+      splash.style.opacity = '1';
+      splash.style.visibility = 'visible';
+
+      // 1. Progress: Preparing session
+      updateProgress(20, "Loading account...");
+      
+      // 2. Fetch tracks from backend API
+      updateProgress(45, "Loading library & tracks...");
+      await fetchSongs();
+
+      // 3. Progress: Finalizing UI setup
+      updateProgress(85, "Building player...");
+      renderPlaylistsNav();
+
+      // 4. Finished
+      updateProgress(100, "Ready!");
+
+      setTimeout(() => {
+        splash.style.opacity = '0';
+        splash.style.visibility = 'hidden';
+        setTimeout(() => splash.classList.add('hidden'), 400);
+        showView('library');
+      }, 300);
+    }
+
+    function updateProgress(percent, text) {
+      document.getElementById('progressBar').style.width = percent + '%';
+      document.getElementById('statusText').innerText = text;
+    }
+
+    function stringToColor(str) {
+      if (!str) return '#2a1840';
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      let color = '#';
+      for (let i = 0; i < 3; i++) color += ('00' + ((hash >> (i * 8)) & 0xFF).toString(16)).substr(-2);
+      return color;
+    }
+
+    function showView(viewName, filterPlaylist = null, profileUser = null) {
+      if (!currentUser && viewName !== 'auth') {
+        showView('auth');
+        return;
+      }
+      document.getElementById('view-auth').classList.add('hidden');
+      document.getElementById('view-library').classList.add('hidden');
+      document.getElementById('view-profile').classList.add('hidden');
+      document.getElementById('view-upload').classList.add('hidden');
+      document.getElementById('view-create-playlist').classList.add('hidden');
+      document.getElementById('view-settings').classList.add('hidden');
+
+      document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+      if (viewName === 'library') {
+        if (filterPlaylist) {
+          document.getElementById('library-title').innerText = `Playlist: ${filterPlaylist}`;
+          renderSongs(playlists[filterPlaylist] || [], document.getElementById('song-grid'));
+        } else {
+          document.getElementById('library-title').innerText = "All Tracks";
+          renderSongs(allSongs, document.getElementById('song-grid'));
+        }
+      }
+      if (viewName === 'profile') renderProfileView(profileUser || (currentUser ? currentUser.username : ""));
+      if (viewName === 'settings') populateSettings();
+      renderPlaylistsNav();
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('auth-title').innerText = isRegisterMode ? "Create an Account" : "Log in to Octave";
+      document.getElementById('auth-submit').innerText = isRegisterMode ? "Register" : "Log In";
+      document.getElementById('auth-toggle').innerText = isRegisterMode ? "Have an account? Log In" : "Need an account? Register";
+    }
+
+    async function handleAuth(e) {
+      if (e) e.preventDefault();
+      const username = document.getElementById('auth-username').value;
+      const password = document.getElementById('auth-password').value;
+      const submitBtn = document.getElementById('auth-submit');
+      const pfp = isRegisterMode ? "DEFAULT" : "";
+
+      const action = isRegisterMode ? "register" : "login";
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Authenticating...";
+
+      try {
+        const res = await fetch(SCRIPT_URL, { 
+          method: "POST", 
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, username, password, pfp }) 
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          currentUser = res.user;
+          localStorage.setItem('octave_user', JSON.stringify(currentUser));
+          updateUserBadge();
+          startLoggedSession(); // Trigger loading screen & fetch data
+        } else { 
+          alert(res.message || "Authentication failed."); 
+        }
+      } catch (err) { 
+        alert("Error connecting to backend API."); 
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = isRegisterMode ? "Register" : "Log In";
+      }
+    }
+
+    function renderAvatar(avatarEl, user) {
+      const pfp = (user && user.pfp) ? user.pfp : "DEFAULT";
+      const username = (user && user.username) ? user.username : "U";
+      if (pfp.startsWith("data:image") || pfp.startsWith("http")) {
+        avatarEl.style.backgroundImage = `url('${pfp}')`;
+        avatarEl.style.backgroundSize = "cover";
+        avatarEl.style.backgroundColor = "transparent";
+        avatarEl.innerText = "";
+      } else {
+        avatarEl.style.backgroundImage = "none";
+        avatarEl.style.backgroundColor = stringToColor(username);
+        avatarEl.innerText = username.charAt(0).toUpperCase();
+      }
+    }
+
+    function updateUserBadge() {
+      document.getElementById('user-badge').classList.remove('hidden');
+      document.getElementById('nav-settings').classList.remove('hidden');
+      renderAvatar(document.getElementById('user-avatar'), currentUser);
+      document.getElementById('user-name').innerText = currentUser.username;
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('octave_user');
+      document.getElementById('user-badge').classList.add('hidden');
+      document.getElementById('nav-settings').classList.add('hidden');
+      showView('auth');
+    }
+
+    function renderProfileView(targetUsername) {
+      const usernameToRender = targetUsername || currentUser.username;
+      document.getElementById('profile-username').innerText = usernameToRender;
+      
+      const targetUserObj = (currentUser && currentUser.username === usernameToRender) 
+        ? currentUser 
+        : { username: usernameToRender, pfp: "DEFAULT" };
+
+      renderAvatar(document.getElementById('profile-avatar-lg'), targetUserObj);
+      
+      const userSongs = allSongs.filter(s => (s.uploader || s.artist) === usernameToRender);
+      renderSongs(userSongs, document.getElementById('profile-song-grid'));
+    }
+
+    function populateSettings() {
+      document.getElementById('settings-username').value = currentUser.username;
+      document.getElementById('settings-password').value = "";
+    }
+
+    async function handleUpdateSettings(e) {
+      if (e) e.preventDefault();
+      const newUsername = document.getElementById('settings-username').value;
+      const newPassword = document.getElementById('settings-password').value;
+      const pfpFile = document.getElementById('settings-pfp-file').files[0];
+      const settingsBtn = document.getElementById('settings-btn');
+
+      settingsBtn.disabled = true;
+      settingsBtn.innerText = "Saving...";
+
+      const submitUpdate = async (pfpValue) => {
+        try {
+          const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "updateSettings", currentUsername: currentUser.username, newUsername, newPassword: newPassword || null, pfp: pfpValue })
+          }).then(r => r.json());
+
+          if (res.status === "success") {
+            currentUser = res.user;
+            localStorage.setItem('octave_user', JSON.stringify(currentUser));
+            updateUserBadge();
+            alert("Settings updated!");
+            showView('library');
+          } else { alert(res.message); }
+        } catch (err) { alert("Update failed."); }
+        finally { settingsBtn.disabled = false; settingsBtn.innerText = "Save Changes"; }
+      };
+
+      if (pfpFile) {
+        const reader = new FileReader();
+        reader.readAsDataURL(pfpFile);
+        reader.onload = () => submitUpdate(reader.result);
+      } else submitUpdate(currentUser.pfp);
+    }
+
+    const fileToBase64 = (file) => new Promise((resolve) => {
+      if (!file) return resolve("");
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+
+    async function handleUpload(e) {
+      if (e) e.preventDefault();
+      const releaseType = document.getElementById('song-type').value;
+      const title = document.getElementById('song-title').value;
+      const artist = document.getElementById('song-artist').value;
+      const coverInput = document.getElementById('song-cover').files[0];
+      const fileInput = document.getElementById('song-file').files[0];
+      const uploadBtn = document.getElementById('upload-btn');
+
+      if (!fileInput) return;
+      uploadBtn.disabled = true;
+      uploadBtn.innerText = "Uploading Base64...";
+
+      const coverBase64 = await fileToBase64(coverInput);
+      const audioBase64 = await fileToBase64(fileInput);
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "uploadSong", 
+            title, 
+            artist, 
+            releaseType, 
+            cover: coverBase64, 
+            audioBase64, 
+            uploader: currentUser.username 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") { 
+          alert("Upload successful!"); 
+          await fetchSongs();
+          showView('library'); 
+        } else {
+          alert(res.message);
+        }
+      } catch (err) { 
+        alert("Upload failed."); 
+      } finally { 
+        uploadBtn.disabled = false; 
+        uploadBtn.innerText = "Upload Music"; 
+      }
+    }
+
+    function openEditModal(song) {
+      document.getElementById('edit-song-id').value = song.id;
+      document.getElementById('edit-song-title').value = song.title;
+      document.getElementById('edit-song-artist').value = song.artist;
+      document.getElementById('edit-song-type').value = song.releaseType || 'Single';
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    async function handleSaveSongEdit(e) {
+      if (e) e.preventDefault();
+      const songId = document.getElementById('edit-song-id').value;
+      const title = document.getElementById('edit-song-title').value;
+      const artist = document.getElementById('edit-song-artist').value;
+      const releaseType = document.getElementById('edit-song-type').value;
+      const coverFile = document.getElementById('edit-song-cover').files[0];
+      const btn = document.getElementById('edit-save-btn');
+
+      btn.disabled = true;
+      btn.innerText = "Saving Base64...";
+
+      const coverBase64 = coverFile ? await fileToBase64(coverFile) : null;
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "editSong", 
+            songId, 
+            title, 
+            artist, 
+            releaseType, 
+            cover: coverBase64, 
+            uploader: currentUser.username 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          alert("Song updated!");
+          closeEditModal();
+          await fetchSongs();
+          showView('library');
+        } else alert(res.message);
+      } catch (err) { alert("Failed to edit song."); }
+      finally { btn.disabled = false; btn.innerText = "Save Changes"; }
+    }
+
+    function handleCreatePlaylist(e) {
+      if (e) e.preventDefault();
+      const name = document.getElementById('playlist-name').value;
+      if (!playlists[name]) {
+        playlists[name] = [];
+        localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+        document.getElementById('playlist-name').value = "";
+        renderPlaylistsNav();
+        showView('library', name);
+      } else alert("Playlist already exists!");
+    }
+
+    function renderPlaylistsNav() {
+      const container = document.getElementById('playlist-nav-list');
+      container.innerHTML = "";
+      Object.keys(playlists).forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'nav-item';
+        item.innerText = name;
+        item.onclick = () => showView('library', name);
+        container.appendChild(item);
+      });
+    }
+
+    function addToPlaylist(e, song) {
+      e.stopPropagation();
+      const pName = prompt(`Enter playlist name to add "${song.title}":\nExisting: ${Object.keys(playlists).join(', ')}`);
+      if (pName) {
+        if (!playlists[pName]) playlists[pName] = [];
+        if (!playlists[pName].some(s => s.id === song.id)) {
+          playlists[pName].push(song);
+          localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+          renderPlaylistsNav();
+          alert("Added to playlist!");
+        } else alert("Song already in playlist.");
+      }
+    }
+
+    async function fetchSongs() {
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getSongs`).then(r => r.json());
+        if (res.status === "success") {
+          allSongs = res.songs || [];
+        }
+      } catch (err) { 
+        console.error("Failed to load tracks:", err); 
+      }
+    }
+
+    function renderSongs(songs, container) {
+      container.innerHTML = "";
+      if (songs.length === 0) { container.innerHTML = "No tracks found."; return; }
+
+      songs.forEach(song => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const coverHtml = song.cover && song.cover.startsWith('data:image') 
+          ? `<div class="card-img"><img src="${song.cover}" alt="Cover"></div>` 
+          : `<div class="card-img">🎵</div>`;
+
+        const creator = song.uploader || song.artist || "Unknown";
+        const isOwner = currentUser && (song.uploader === currentUser.username || song.artist === currentUser.username);
+
+        card.innerHTML = `
+          <div class="card-badge">${song.releaseType || 'Single'}</div>
+          ${coverHtml}
+          <div class="card-title">${song.title}</div>
+          <div class="card-sub">${song.artist}</div>
+          <div><a class="creator-link">By @${creator}</a></div>
+          <div class="card-actions">
+            <button class="btn-sm btn-playlist">+ Playlist</button>
+            ${isOwner ? `<button class="btn-sm btn-edit">✎ Edit</button>` : ''}
+          </div>
+        `;
+
+        card.querySelector('.creator-link').onclick = (e) => {
+          e.stopPropagation();
+          showView('profile', null, creator);
+        };
+        card.querySelector('.btn-playlist').onclick = (e) => addToPlaylist(e, song);
+        if (isOwner) card.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(song); };
+        card.onclick = () => playSong(song);
+        container.appendChild(card);
+      });
+    }
+
+    function playSong(song) {
+      document.getElementById('player-title').innerText = song.title;
+      document.getElementById('player-artist').innerText = song.artist;
+      const coverEl = document.getElementById('player-cover');
+      
+      if (song.cover && song.cover.startsWith('data:image')) {
+        coverEl.innerHTML = `<img src="${song.cover}" />`;
+      } else coverEl.innerHTML = "🎵";
+
+      const player = document.getElementById('audio-element');
+      player.src = song.audio;
+      player.play();
+    }
+  </script>
 </body>
 </html>
