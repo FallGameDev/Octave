@@ -24,9 +24,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg-base); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
 
-    /* ========================================================= */
-    /* MAIN APP LAYOUT                                           */
-    /* ========================================================= */
+    /* Layout */
     #sidebar { width: 240px; background-color: #040208; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; flex-shrink: 0; }
     .brand { font-size: 1.5rem; font-weight: bold; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
     .sidebar-logo-img { height: 32px; width: auto; object-fit: contain; }
@@ -39,11 +37,9 @@
     .user-profile { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--bg-highlight); cursor: pointer; }
     .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background-color: var(--bg-highlight); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.1rem; text-transform: uppercase; flex-shrink: 0; }
 
-    /* Profile Header */
     .profile-header { display: flex; align-items: center; gap: 24px; background-color: var(--bg-surface); padding: 24px; border-radius: 12px; margin-bottom: 24px; }
     .profile-avatar-lg { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; background-color: var(--bg-highlight); flex-shrink: 0; background-size: cover; background-position: center; }
 
-    /* Main Area */
     #main-view { flex: 1; background: linear-gradient(to bottom, #1d0c2e, var(--bg-base)); padding: 32px; overflow-y: auto; padding-bottom: 120px; }
     h2 { margin-bottom: 16px; }
 
@@ -116,7 +112,7 @@
     
     <div id="view-auth" class="form-container">
       <h2 id="auth-title">Log in to Octave</h2>
-      <form id="auth-form" onsubmit="handleAuth(event)">
+      <form id="auth-form" onsubmit="event.preventDefault(); handleAuth();">
         <div class="form-group">
           <label>Username</label>
           <input type="text" id="auth-username" required autocomplete="username">
@@ -149,7 +145,7 @@
 
     <div id="view-upload" class="form-container hidden">
       <h2>Upload to Octave</h2>
-      <form onsubmit="handleUpload(event)">
+      <form onsubmit="event.preventDefault(); handleUpload();">
         <div class="form-group">
           <label>Release Type</label>
           <select id="song-type">
@@ -179,7 +175,7 @@
 
     <div id="view-create-playlist" class="form-container hidden">
       <h2>Create New Playlist</h2>
-      <form onsubmit="handleCreatePlaylist(event)">
+      <form onsubmit="event.preventDefault(); handleCreatePlaylist();">
         <div class="form-group">
           <label>Playlist Name</label>
           <input type="text" id="playlist-name" required>
@@ -190,7 +186,7 @@
 
     <div id="view-settings" class="form-container hidden">
       <h2>Account Settings</h2>
-      <form onsubmit="handleUpdateSettings(event)">
+      <form onsubmit="event.preventDefault(); handleUpdateSettings();">
         <div class="form-group">
           <label>Username</label>
           <input type="text" id="settings-username" required>
@@ -212,7 +208,7 @@
   <div id="edit-modal" class="modal-overlay hidden">
     <div class="form-container" style="margin:0;">
       <h2>Edit Song</h2>
-      <form onsubmit="handleSaveSongEdit(event)">
+      <form onsubmit="event.preventDefault(); handleSaveSongEdit();">
         <input type="hidden" id="edit-song-id">
         <div class="form-group">
           <label>Release Type</label>
@@ -316,8 +312,7 @@
       document.getElementById('auth-toggle').innerText = isRegisterMode ? "Have an account? Log In" : "Need an account? Register";
     }
 
-    async function handleAuth(e) {
-      if (e) e.preventDefault();
+    async function handleAuth() {
       const username = document.getElementById('auth-username').value;
       const password = document.getElementById('auth-password').value;
       const submitBtn = document.getElementById('auth-submit');
@@ -401,8 +396,7 @@
       document.getElementById('settings-password').value = "";
     }
 
-    async function handleUpdateSettings(e) {
-      if (e) e.preventDefault();
+    async function handleUpdateSettings() {
       const newUsername = document.getElementById('settings-username').value;
       const newPassword = document.getElementById('settings-password').value;
       const pfpFile = document.getElementById('settings-pfp-file').files[0];
@@ -445,8 +439,7 @@
       reader.readAsDataURL(file);
     });
 
-    async function handleUpload(e) {
-      if (e) e.preventDefault();
+    async function handleUpload() {
       const releaseType = document.getElementById('song-type').value;
       const title = document.getElementById('song-title').value;
       const artist = document.getElementById('song-artist').value;
@@ -503,8 +496,7 @@
       document.getElementById('edit-modal').classList.add('hidden');
     }
 
-    async function handleSaveSongEdit(e) {
-      if (e) e.preventDefault();
+    async function handleSaveSongEdit() {
       const songId = document.getElementById('edit-song-id').value;
       const title = document.getElementById('edit-song-title').value;
       const artist = document.getElementById('edit-song-artist').value;
@@ -527,4 +519,120 @@
             title, 
             artist, 
             releaseType, 
-            cover: coverBase
+            cover: coverBase64, 
+            uploader: currentUser.username 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          alert("Song updated!");
+          closeEditModal();
+          await fetchSongs();
+          showView('library');
+        } else alert(res.message);
+      } catch (err) { alert("Failed to edit song."); }
+      finally { btn.disabled = false; btn.innerText = "Save Changes"; }
+    }
+
+    function handleCreatePlaylist() {
+      const name = document.getElementById('playlist-name').value;
+      if (!playlists[name]) {
+        playlists[name] = [];
+        localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+        document.getElementById('playlist-name').value = "";
+        renderPlaylistsNav();
+        showView('library', name);
+      } else alert("Playlist already exists!");
+    }
+
+    function renderPlaylistsNav() {
+      const container = document.getElementById('playlist-nav-list');
+      container.innerHTML = "";
+      Object.keys(playlists).forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'nav-item';
+        item.innerText = name;
+        item.onclick = () => showView('library', name);
+        container.appendChild(item);
+      });
+    }
+
+    function addToPlaylist(e, song) {
+      e.stopPropagation();
+      const pName = prompt(`Enter playlist name to add "${song.title}":\nExisting: ${Object.keys(playlists).join(', ')}`);
+      if (pName) {
+        if (!playlists[pName]) playlists[pName] = [];
+        if (!playlists[pName].some(s => s.id === song.id)) {
+          playlists[pName].push(song);
+          localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+          renderPlaylistsNav();
+          alert("Added to playlist!");
+        } else alert("Song already in playlist.");
+      }
+    }
+
+    async function fetchSongs() {
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getSongs`).then(r => r.json());
+        if (res.status === "success") {
+          allSongs = res.songs || [];
+        }
+      } catch (err) { 
+        console.error("Failed to load tracks:", err); 
+      }
+    }
+
+    function renderSongs(songs, container) {
+      container.innerHTML = "";
+      if (songs.length === 0) { container.innerHTML = "No tracks found."; return; }
+
+      songs.forEach(song => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const coverHtml = song.cover && song.cover.startsWith('data:image') 
+          ? `<div class="card-img"><img src="${song.cover}" alt="Cover"></div>` 
+          : `<div class="card-img">🎵</div>`;
+
+        const creator = song.uploader || song.artist || "Unknown";
+        const isOwner = currentUser && (song.uploader === currentUser.username || song.artist === currentUser.username);
+
+        card.innerHTML = `
+          <div class="card-badge">${song.releaseType || 'Single'}</div>
+          ${coverHtml}
+          <div class="card-title">${song.title}</div>
+          <div class="card-sub">${song.artist}</div>
+          <div><a class="creator-link">By @${creator}</a></div>
+          <div class="card-actions">
+            <button class="btn-sm btn-playlist">+ Playlist</button>
+            ${isOwner ? `<button class="btn-sm btn-edit">✎ Edit</button>` : ''}
+          </div>
+        `;
+
+        card.querySelector('.creator-link').onclick = (e) => {
+          e.stopPropagation();
+          showView('profile', null, creator);
+        };
+        card.querySelector('.btn-playlist').onclick = (e) => addToPlaylist(e, song);
+        if (isOwner) card.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(song); };
+        card.onclick = () => playSong(song);
+        container.appendChild(card);
+      });
+    }
+
+    function playSong(song) {
+      document.getElementById('player-title').innerText = song.title;
+      document.getElementById('player-artist').innerText = song.artist;
+      const coverEl = document.getElementById('player-cover');
+      
+      if (song.cover && song.cover.startsWith('data:image')) {
+        coverEl.innerHTML = `<img src="${song.cover}" />`;
+      } else coverEl.innerHTML = "🎵";
+
+      const player = document.getElementById('audio-element');
+      player.src = song.audio;
+      player.play();
+    }
+  </script>
+</body>
+</html>
