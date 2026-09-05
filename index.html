@@ -60,6 +60,7 @@
     
     .btn { width: 100%; padding: 12px; background-color: var(--primary); color: white; font-weight: bold; border: none; border-radius: 50px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
     .btn:hover { background-color: var(--primary-hover); transform: scale(1.02); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--text-sub); margin-top: 8px; }
 
     /* Modal */
@@ -78,6 +79,7 @@
 </head>
 <body>
 
+  <!-- Sidebar -->
   <div id="sidebar">
     <div class="brand">🎵 Octave</div>
     <div class="nav-item active" id="nav-library" onclick="showView('library')">Home / Library</div>
@@ -97,29 +99,33 @@
     </div>
   </div>
 
+  <!-- Main View -->
   <div id="main-view">
     
+    <!-- Authentication Form -->
     <div id="view-auth" class="form-container">
       <h2 id="auth-title">Log in to Octave</h2>
       <form id="auth-form" onsubmit="handleAuth(event)">
         <div class="form-group">
           <label>Username</label>
-          <input type="text" id="auth-username" required>
+          <input type="text" id="auth-username" required autocomplete="username">
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input type="password" id="auth-password" required>
+          <input type="password" id="auth-password" required autocomplete="current-password">
         </div>
         <button type="submit" class="btn" id="auth-submit">Log In</button>
         <button type="button" class="btn btn-secondary" onclick="toggleAuthMode()" id="auth-toggle">Need an account? Register</button>
       </form>
     </div>
 
+    <!-- Song Library -->
     <div id="view-library" class="hidden">
       <h2 id="library-title">All Tracks</h2>
       <div id="song-grid" class="card-grid"></div>
     </div>
 
+    <!-- User Profile View -->
     <div id="view-profile" class="hidden">
       <div class="profile-header">
         <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
@@ -132,6 +138,7 @@
       <div id="profile-song-grid" class="card-grid"></div>
     </div>
 
+    <!-- Upload Music -->
     <div id="view-upload" class="form-container hidden">
       <h2>Upload to Octave</h2>
       <form onsubmit="handleUpload(event)">
@@ -162,6 +169,7 @@
       </form>
     </div>
 
+    <!-- Create Playlist -->
     <div id="view-create-playlist" class="form-container hidden">
       <h2>Create New Playlist</h2>
       <form onsubmit="handleCreatePlaylist(event)">
@@ -173,6 +181,7 @@
       </form>
     </div>
 
+    <!-- Account Settings -->
     <div id="view-settings" class="form-container hidden">
       <h2>Account Settings</h2>
       <form onsubmit="handleUpdateSettings(event)">
@@ -194,6 +203,7 @@
 
   </div>
 
+  <!-- Edit Song Modal -->
   <div id="edit-modal" class="modal-overlay hidden">
     <div class="form-container" style="margin:0;">
       <h2>Edit Song</h2>
@@ -224,6 +234,7 @@
     </div>
   </div>
 
+  <!-- Player Controls Bar -->
   <div id="player-bar">
     <div class="now-playing">
       <div id="player-cover" class="now-playing-img">🎵</div>
@@ -256,6 +267,7 @@
     });
 
     function stringToColor(str) {
+      if (!str) return '#2a1840';
       let hash = 0;
       for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
       let color = '#';
@@ -299,14 +311,314 @@
     }
 
     async function handleAuth(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const username = document.getElementById('auth-username').value;
       const password = document.getElementById('auth-password').value;
+      const submitBtn = document.getElementById('auth-submit');
       const pfp = isRegisterMode ? "DEFAULT" : "";
 
       const action = isRegisterMode ? "register" : "login";
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Authenticating...";
+
       try {
-        const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ action, username, password, pfp }) }).then(r => r.json());
+        const res = await fetch(SCRIPT_URL, { 
+          method: "POST", 
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, username, password, pfp }) 
+        }).then(r => r.json());
+
         if (res.status === "success") {
           currentUser = res.user;
-          localStorage.setItem('octave_user', JSON
+          localStorage.setItem('octave_user', JSON.stringify(currentUser));
+          updateUserBadge();
+          showView('library');
+        } else { 
+          alert(res.message || "Authentication failed."); 
+        }
+      } catch (err) { 
+        alert("Error connecting to backend API."); 
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = isRegisterMode ? "Register" : "Log In";
+      }
+    }
+
+    function renderAvatar(avatarEl, user) {
+      const pfp = user.pfp || "DEFAULT";
+      if (pfp.startsWith("data:image") || pfp.startsWith("http")) {
+        avatarEl.style.backgroundImage = `url('${pfp}')`;
+        avatarEl.style.backgroundSize = "cover";
+        avatarEl.style.backgroundColor = "transparent";
+        avatarEl.innerText = "";
+      } else {
+        avatarEl.style.backgroundImage = "none";
+        avatarEl.style.backgroundColor = stringToColor(user.username);
+        avatarEl.innerText = user.username ? user.username.charAt(0).toUpperCase() : "U";
+      }
+    }
+
+    function updateUserBadge() {
+      document.getElementById('user-badge').classList.remove('hidden');
+      document.getElementById('nav-settings').classList.remove('hidden');
+      renderAvatar(document.getElementById('user-avatar'), currentUser);
+      document.getElementById('user-name').innerText = currentUser.username;
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('octave_user');
+      document.getElementById('user-badge').classList.add('hidden');
+      document.getElementById('nav-settings').classList.add('hidden');
+      showView('auth');
+    }
+
+    function renderProfileView() {
+      document.getElementById('profile-username').innerText = currentUser.username;
+      renderAvatar(document.getElementById('profile-avatar-lg'), currentUser);
+      const userSongs = allSongs.filter(s => (s.uploader || s.artist) === currentUser.username);
+      renderSongs(userSongs, document.getElementById('profile-song-grid'));
+    }
+
+    function populateSettings() {
+      document.getElementById('settings-username').value = currentUser.username;
+      document.getElementById('settings-password').value = "";
+    }
+
+    async function handleUpdateSettings(e) {
+      if (e) e.preventDefault();
+      const newUsername = document.getElementById('settings-username').value;
+      const newPassword = document.getElementById('settings-password').value;
+      const pfpFile = document.getElementById('settings-pfp-file').files[0];
+      const settingsBtn = document.getElementById('settings-btn');
+
+      settingsBtn.disabled = true;
+      settingsBtn.innerText = "Saving...";
+
+      const submitUpdate = async (pfpValue) => {
+        try {
+          const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "updateSettings", currentUsername: currentUser.username, newUsername, newPassword: newPassword || null, pfp: pfpValue })
+          }).then(r => r.json());
+
+          if (res.status === "success") {
+            currentUser = res.user;
+            localStorage.setItem('octave_user', JSON.stringify(currentUser));
+            updateUserBadge();
+            alert("Settings updated!");
+            showView('library');
+          } else { alert(res.message); }
+        } catch (err) { alert("Update failed."); }
+        finally { settingsBtn.disabled = false; settingsBtn.innerText = "Save Changes"; }
+      };
+
+      if (pfpFile) {
+        const reader = new FileReader();
+        reader.readAsDataURL(pfpFile);
+        reader.onload = () => submitUpdate(reader.result);
+      } else submitUpdate(currentUser.pfp);
+    }
+
+    const fileToBase64 = (file) => new Promise((resolve) => {
+      if (!file) return resolve("");
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+
+    async function handleUpload(e) {
+      if (e) e.preventDefault();
+      const releaseType = document.getElementById('song-type').value;
+      const title = document.getElementById('song-title').value;
+      const artist = document.getElementById('song-artist').value;
+      const coverInput = document.getElementById('song-cover').files[0];
+      const fileInput = document.getElementById('song-file').files[0];
+      const uploadBtn = document.getElementById('upload-btn');
+
+      if (!fileInput) return;
+      uploadBtn.disabled = true;
+      uploadBtn.innerText = "Uploading Base64...";
+
+      const coverBase64 = await fileToBase64(coverInput);
+      const audioBase64 = await fileToBase64(fileInput);
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "uploadSong", 
+            title, 
+            artist, 
+            releaseType, 
+            cover: coverBase64, 
+            audioBase64, 
+            uploader: currentUser.username 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") { 
+          alert("Upload successful!"); 
+          showView('library'); 
+        } else {
+          alert(res.message);
+        }
+      } catch (err) { 
+        alert("Upload failed."); 
+      } finally { 
+        uploadBtn.disabled = false; 
+        uploadBtn.innerText = "Upload Music"; 
+      }
+    }
+
+    function openEditModal(song) {
+      document.getElementById('edit-song-id').value = song.id;
+      document.getElementById('edit-song-title').value = song.title;
+      document.getElementById('edit-song-artist').value = song.artist;
+      document.getElementById('edit-song-type').value = song.releaseType || 'Single';
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    async function handleSaveSongEdit(e) {
+      if (e) e.preventDefault();
+      const songId = document.getElementById('edit-song-id').value;
+      const title = document.getElementById('edit-song-title').value;
+      const artist = document.getElementById('edit-song-artist').value;
+      const releaseType = document.getElementById('edit-song-type').value;
+      const coverFile = document.getElementById('edit-song-cover').files[0];
+      const btn = document.getElementById('edit-save-btn');
+
+      btn.disabled = true;
+      btn.innerText = "Saving Base64...";
+
+      const coverBase64 = coverFile ? await fileToBase64(coverFile) : null;
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "editSong", 
+            songId, 
+            title, 
+            artist, 
+            releaseType, 
+            cover: coverBase64, 
+            uploader: currentUser.username 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          alert("Song updated!");
+          closeEditModal();
+          fetchSongs();
+        } else alert(res.message);
+      } catch (err) { alert("Failed to edit song."); }
+      finally { btn.disabled = false; btn.innerText = "Save Changes"; }
+    }
+
+    function handleCreatePlaylist(e) {
+      if (e) e.preventDefault();
+      const name = document.getElementById('playlist-name').value;
+      if (!playlists[name]) {
+        playlists[name] = [];
+        localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+        document.getElementById('playlist-name').value = "";
+        renderPlaylistsNav();
+        showView('library', name);
+      } else alert("Playlist already exists!");
+    }
+
+    function renderPlaylistsNav() {
+      const container = document.getElementById('playlist-nav-list');
+      container.innerHTML = "";
+      Object.keys(playlists).forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'nav-item';
+        item.innerText = name;
+        item.onclick = () => showView('library', name);
+        container.appendChild(item);
+      });
+    }
+
+    function addToPlaylist(e, song) {
+      e.stopPropagation();
+      const pName = prompt(`Enter playlist name to add "${song.title}":\nExisting: ${Object.keys(playlists).join(', ')}`);
+      if (pName) {
+        if (!playlists[pName]) playlists[pName] = [];
+        if (!playlists[pName].some(s => s.id === song.id)) {
+          playlists[pName].push(song);
+          localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+          renderPlaylistsNav();
+          alert("Added to playlist!");
+        } else alert("Song already in playlist.");
+      }
+    }
+
+    async function fetchSongs() {
+      const grid = document.getElementById('song-grid');
+      grid.innerHTML = "Loading tracks...";
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getSongs`).then(r => r.json());
+        if (res.status === "success") {
+          allSongs = res.songs || [];
+          renderSongs(allSongs, grid);
+        }
+      } catch (err) { grid.innerHTML = "Failed to load tracks."; }
+    }
+
+    function renderSongs(songs, container) {
+      container.innerHTML = "";
+      if (songs.length === 0) { container.innerHTML = "No tracks found."; return; }
+
+      songs.forEach(song => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const coverHtml = song.cover && song.cover.startsWith('data:image') 
+          ? `<div class="card-img"><img src="${song.cover}" alt="Cover"></div>` 
+          : `<div class="card-img">🎵</div>`;
+
+        const isOwner = currentUser && (song.uploader === currentUser.username || song.artist === currentUser.username);
+
+        card.innerHTML = `
+          <div class="card-badge">${song.releaseType || 'Single'}</div>
+          ${coverHtml}
+          <div class="card-title">${song.title}</div>
+          <div class="card-sub">${song.artist}</div>
+          <div class="card-actions">
+            <button class="btn-sm btn-playlist">+ Playlist</button>
+            ${isOwner ? `<button class="btn-sm btn-edit">✎ Edit</button>` : ''}
+          </div>
+        `;
+
+        card.querySelector('.btn-playlist').onclick = (e) => addToPlaylist(e, song);
+        if (isOwner) card.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(song); };
+        card.onclick = () => playSong(song);
+        container.appendChild(card);
+      });
+    }
+
+    function playSong(song) {
+      document.getElementById('player-title').innerText = song.title;
+      document.getElementById('player-artist').innerText = song.artist;
+      const coverEl = document.getElementById('player-cover');
+      
+      if (song.cover && song.cover.startsWith('data:image')) {
+        coverEl.innerHTML = `<img src="${song.cover}" />`;
+      } else coverEl.innerHTML = "🎵";
+
+      const player = document.getElementById('audio-element');
+      player.src = song.audio;
+      player.play();
+    }
+  </script>
+</body>
+</html>
