@@ -3,130 +3,1101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Loading State Pattern Example</title>
+  <title>Octave - Web Player</title>
+  
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
+    :root {
+      --bg-base: #07040d;
+      --bg-surface: #180d26;
+      --bg-highlight: #2a1840;
+      --primary: #a855f7;
+      --primary-hover: #9333ea;
+      --accent-cyan: #38bdf8;
+      --accent-magenta: #e879f9;
+      --text-main: #ffffff;
+      --text-sub: #a799be;
     }
 
-    #content-container {
-      padding: 15px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      min-height: 100px;
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-base); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
+
+    /* Collapsible Sidebar Setup */
+    #sidebar { 
+      width: 240px; 
+      background-color: #040208; 
+      padding: 24px 16px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 16px; 
+      flex-shrink: 0;
+      transition: margin-left 0.3s ease, transform 0.3s ease;
+      z-index: 20;
+    }
+    
+    /* Hidden Sidebar State */
+    #sidebar.collapsed {
+      margin-left: -240px;
     }
 
-    .loading {
-      color: #0066cc;
-      font-weight: bold;
-    }
+    .brand { font-size: 1.5rem; font-weight: bold; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+    .sidebar-logo-img { height: 32px; width: auto; object-fit: contain; }
+    .nav-item { color: var(--text-sub); text-decoration: none; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .nav-item:hover, .nav-item.active { color: var(--text-main); }
+    
+    .section-divider { border-top: 1px solid var(--bg-highlight); margin: 8px 0; }
+    .playlist-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 200px; }
 
-    .empty {
-      color: #777777;
-      font-style: italic;
-    }
+    .user-profile { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--bg-highlight); cursor: pointer; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background-color: var(--bg-highlight); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.1rem; text-transform: uppercase; flex-shrink: 0; background-position: center; background-size: cover; }
 
-    .data-item {
-      padding: 8px 0;
-      border-bottom: 1px solid #eee;
-    }
+    .profile-header { display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-surface); padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+    .profile-info { display: flex; align-items: center; gap: 24px; }
+    .profile-avatar-lg { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; background-color: var(--bg-highlight); flex-shrink: 0; background-size: cover; background-position: center; }
 
-    .data-item:last-child {
-      border-bottom: none;
-    }
+    #main-view { flex: 1; background: linear-gradient(to bottom, #1d0c2e, var(--bg-base)); padding: 32px; overflow-y: auto; padding-bottom: 120px; transition: width 0.3s ease; }
+    h2 { margin-bottom: 16px; }
 
-    .controls {
-      margin-bottom: 15px;
-    }
-
-    button {
-      padding: 8px 12px;
-      margin-right: 8px;
+    /* Toggle Menu Button */
+    .menu-toggle-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--bg-highlight);
+      color: var(--text-main);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
+      flex-shrink: 0;
+      transition: background-color 0.2s, transform 0.1s;
     }
+    .menu-toggle-btn:hover {
+      background: var(--bg-highlight);
+      color: var(--primary);
+    }
+
+    /* Spotify-style Header & Search Bar */
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 16px; }
+    .search-container { position: relative; flex: 1; max-width: 480px; }
+    .search-bar { width: 100%; padding: 12px 20px 12px 42px; border-radius: 500px; border: 1px solid transparent; background-color: var(--bg-surface); color: var(--text-main); font-size: 0.95rem; outline: none; transition: 0.2s; }
+    .search-bar:focus { border-color: var(--primary); background-color: var(--bg-highlight); }
+    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); fill: var(--text-sub); width: 18px; height: 18px; pointer-events: none; }
+
+    /* Tabs */
+    .nav-tabs { display: flex; gap: 12px; margin-bottom: 24px; border-bottom: 1px solid var(--bg-highlight); padding-bottom: 12px; }
+    .tab-btn { background: none; border: none; color: var(--text-sub); font-weight: 600; font-size: 0.95rem; padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s ease; }
+    .tab-btn:hover { color: var(--text-main); }
+    .tab-btn.active { background-color: var(--text-main); color: #000000; }
+
+    /* Card Grid */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-top: 16px; }
+    .card { background-color: var(--bg-surface); padding: 16px; border-radius: 8px; cursor: pointer; transition: background-color 0.3s; position: relative; }
+    .card:hover { background-color: var(--bg-highlight); }
+    .card-img { width: 100%; aspect-ratio: 1; border-radius: 4px; object-fit: cover; background-color: var(--bg-highlight); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem; overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .card-title { font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-sub { color: var(--text-sub); font-size: 0.85rem; }
+    .creator-link { font-size: 0.75rem; color: var(--primary); text-decoration: none; display: inline-block; margin-top: 4px; cursor: pointer; font-weight: 500; }
+    .creator-link:hover { text-decoration: underline; color: var(--primary-hover); }
+    .card-badge { position: absolute; top: 24px; right: 24px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; text-transform: uppercase; }
+
+    .badge-enjoyed { background-color: var(--primary); color: #fff; display: inline-block; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-top: 6px; }
+    .badge-followed { background-color: var(--accent-cyan); color: #000; display: inline-block; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-top: 6px; }
+
+    .card-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .btn-sm { padding: 4px 8px; font-size: 0.75rem; background: var(--bg-highlight); border: none; color: white; border-radius: 4px; cursor: pointer; }
+    .btn-sm:hover { background: var(--primary); }
+
+    .follow-btn { margin-top: 8px; width: 100%; padding: 6px 0; border-radius: 20px; border: 1px solid var(--text-sub); background: transparent; color: var(--text-main); font-size: 0.8rem; cursor: pointer; font-weight: 600; }
+    .follow-btn.following { background-color: var(--text-main); color: #000000; border-color: var(--text-main); }
+
+    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 40vh; color: var(--text-sub); text-align: center; }
+    .empty-state h2 { color: var(--text-main); margin-bottom: 8px; font-size: 1.5rem; }
+
+    /* Forms */
+    .form-container { max-width: 450px; margin: 40px auto; background-color: var(--bg-surface); padding: 32px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 8px; color: var(--text-sub); font-size: 0.85rem; }
+    .form-group input, .form-group select { width: 100%; padding: 12px; background: #221236; border: 1px solid transparent; border-radius: 4px; color: white; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
+    
+    .btn { width: 100%; padding: 12px; background-color: var(--primary); color: white; font-weight: bold; border: none; border-radius: 50px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; }
+    .btn:hover { background-color: var(--primary-hover); transform: scale(1.02); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--text-sub); margin-top: 8px; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+
+    /* Bottom Player Bar */
+    #player-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 90px; background-color: #0a0512; border-top: 1px solid #1f0f33; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 30; }
+    .now-playing { display: flex; align-items: center; gap: 12px; width: 30%; }
+    .now-playing-img { width: 56px; height: 56px; border-radius: 4px; object-fit: cover; background-color: var(--bg-highlight); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .now-playing-img img { width: 100%; height: 100%; object-fit: cover; }
+    .player-controls { display: flex; flex-direction: column; align-items: center; width: 40%; gap: 8px; }
+    audio { width: 100%; height: 32px; filter: invert(80%) hue-rotate(220deg); }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <div class="controls">
-    <button id="btn-load-data">Load Data</button>
-    <button id="btn-load-empty">Load Empty State</button>
+  <!-- Sidebar (Collapsed by default) -->
+  <div id="sidebar" class="collapsed">
+    <div class="brand">
+      <img src="logo.png" alt="Octave Logo" class="sidebar-logo-img" onerror="this.style.display='none'">
+      <span>Octave</span>
+    </div>
+    <div class="nav-item active" id="nav-library" onclick="showView('library')">Home / Library</div>
+    <div class="nav-item" id="nav-profile" onclick="showView('profile')">View Profile</div>
+    <div class="nav-item" id="nav-create-playlist" onclick="showView('create-playlist')">+ Create Playlist</div>
+    <div class="nav-item hidden" id="nav-settings" onclick="showView('settings')">Account Settings</div>
+    
+    <div class="section-divider"></div>
+    <div style="color: var(--text-sub); font-size: 0.8rem; font-weight: bold; text-transform: uppercase;">Playlists</div>
+    <div class="playlist-list" id="playlist-nav-list"></div>
+
+    <div class="user-profile hidden" id="user-badge" onclick="showView('profile')">
+      <div id="user-avatar" class="avatar"></div>
+      <span id="user-name" style="font-weight: 600;"></span>
+      <span onclick="event.stopPropagation(); logout();" style="margin-left:auto; cursor:pointer; color:var(--text-sub); font-size:0.8rem;">Exit</span>
+    </div>
   </div>
 
-  <div id="content-container"></div>
+  <!-- Main View -->
+  <div id="main-view">
+    
+    <!-- Authentication Form -->
+    <div id="view-auth" class="form-container hidden">
+      <h2 id="auth-title">Log in to Octave</h2>
+      <form id="auth-form" onsubmit="event.preventDefault(); handleAuth();">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="auth-username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="auth-password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn" id="auth-submit">Log In</button>
+        <button type="button" class="btn btn-secondary" onclick="toggleAuthMode()" id="auth-toggle">Need an account? Register</button>
+      </form>
+    </div>
+
+    <!-- Main Music Interface -->
+    <div id="view-library" class="hidden">
+      <div class="top-bar">
+        <button class="menu-toggle-btn" onclick="toggleSidebar()" title="Toggle Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="search-container">
+          <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <input type="text" id="searchInput" class="search-bar" placeholder="What do you want to listen to?">
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchHomeTab('home')">Home</button>
+        <button class="tab-btn" onclick="switchHomeTab('playlists')">Playlists</button>
+        <button class="tab-btn" onclick="switchHomeTab('albums')">Albums</button>
+        <button class="tab-btn" onclick="switchHomeTab('artists')">Artists</button>
+      </div>
+
+      <!-- TAB CONTENT -->
+      <div id="home-tab-home">
+        <div id="home-content"></div>
+      </div>
+
+      <div id="home-tab-playlists" class="hidden">
+        <h2>Your Playlists</h2>
+        <div id="playlists-grid" class="card-grid"></div>
+      </div>
+
+      <div id="home-tab-albums" class="hidden">
+        <h2>Albums from Artists You Enjoy</h2>
+        <div id="albums-grid" class="card-grid"></div>
+      </div>
+
+      <div id="home-tab-artists" class="hidden">
+        <h2>Artists</h2>
+        <div id="artists-grid" class="card-grid"></div>
+      </div>
+    </div>
+
+    <!-- User Profile View -->
+    <div id="view-profile" class="hidden">
+      <div class="top-bar">
+        <button class="menu-toggle-btn" onclick="toggleSidebar()" title="Toggle Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="profile-header">
+        <div class="profile-info">
+          <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
+          <div>
+            <h1 id="profile-username" style="font-size: 2rem;"></h1>
+            <p style="color: var(--text-sub);" id="profile-subtitle">Artist Profile</p>
+            <button id="profile-follow-btn" class="follow-btn hidden" style="width: auto; padding: 6px 20px; margin-top: 12px;" onclick="toggleFollowCurrentProfile()"></button>
+          </div>
+        </div>
+        <!-- Upload Song Action (Exclusive to Profile View) -->
+        <button id="profile-upload-btn" class="btn hidden" style="width: auto; padding: 10px 24px;" onclick="showView('upload')">+ Upload Song</button>
+      </div>
+      <h2>Uploaded Tracks</h2>
+      <div id="profile-song-grid" class="card-grid"></div>
+    </div>
+
+    <!-- Upload Music -->
+    <div id="view-upload" class="form-container hidden">
+      <h2>Upload to Octave</h2>
+      <form onsubmit="event.preventDefault(); handleUpload();">
+        <div class="form-group">
+          <label>Release Type</label>
+          <select id="song-type">
+            <option value="Single">Single</option>
+            <option value="Album">Album Track</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Track Title</label>
+          <input type="text" id="song-title" required>
+        </div>
+        <div class="form-group">
+          <label>Artist / Album Name</label>
+          <input type="text" id="song-artist" required>
+        </div>
+        <div class="form-group">
+          <label>Cover Art / Icon (Image File)</label>
+          <input type="file" id="song-cover" accept="image/*">
+        </div>
+        <div class="form-group">
+          <label>Audio File</label>
+          <input type="file" id="song-file" accept="audio/*" required>
+        </div>
+        <button type="submit" class="btn" id="upload-btn">Upload Music</button>
+        <button type="button" class="btn btn-secondary" onclick="showView('profile')">Cancel</button>
+      </form>
+    </div>
+
+    <!-- Create Playlist -->
+    <div id="view-create-playlist" class="form-container hidden">
+      <h2>Create New Playlist</h2>
+      <form onsubmit="event.preventDefault(); handleCreatePlaylist();">
+        <div class="form-group">
+          <label>Playlist Name</label>
+          <input type="text" id="playlist-name" required>
+        </div>
+        <button type="submit" class="btn">Create Playlist</button>
+      </form>
+    </div>
+
+    <!-- Account Settings -->
+    <div id="view-settings" class="form-container hidden">
+      <h2>Account Settings</h2>
+      <form onsubmit="event.preventDefault(); handleUpdateSettings();">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="settings-username" required>
+        </div>
+        <div class="form-group">
+          <label>New Password (Leave blank to keep current)</label>
+          <input type="password" id="settings-password" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Profile Picture (Upload Image)</label>
+          <input type="file" id="settings-pfp-file" accept="image/*">
+        </div>
+        <button type="submit" class="btn" id="settings-btn">Save Changes</button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Edit Song Modal -->
+  <div id="edit-modal" class="modal-overlay hidden">
+    <div class="form-container" style="margin:0;">
+      <h2>Edit Song</h2>
+      <form onsubmit="event.preventDefault(); handleSaveSongEdit();">
+        <input type="hidden" id="edit-song-id">
+        <div class="form-group">
+          <label>Release Type</label>
+          <select id="edit-song-type">
+            <option value="Single">Single</option>
+            <option value="Album">Album Track</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Track Title</label>
+          <input type="text" id="edit-song-title" required>
+        </div>
+        <div class="form-group">
+          <label>Artist Name</label>
+          <input type="text" id="edit-song-artist" required>
+        </div>
+        <div class="form-group">
+          <label>New Cover Art / Icon (Image File)</label>
+          <input type="file" id="edit-song-cover" accept="image/*">
+        </div>
+        <button type="submit" class="btn" id="edit-save-btn">Save Changes</button>
+        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Player Controls Bar -->
+  <div id="player-bar">
+    <div class="now-playing">
+      <div id="player-cover" class="now-playing-img">🎵</div>
+      <div>
+        <div id="player-title" style="font-weight: bold;">Select a track</div>
+        <div id="player-artist" style="color: var(--text-sub); font-size: 0.85rem;">-</div>
+      </div>
+    </div>
+    <div class="player-controls">
+      <audio id="audio-element" controls></audio>
+    </div>
+    <div style="width: 30%;"></div>
+  </div>
 
   <script>
-    let isLoading = false;
-    let items = [];
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypAA6CRTRjk5xAJB7j2x88Ooi1iSOcEAp5U3dITbVzq_GxZHlxERfTe-Jd6P9yc54j/exec";
 
-    function render() {
-      const container = document.getElementById('content-container');
+    let currentUser = null;
+    let isRegisterMode = false;
+    let isLoadingSongs = true;
+    let allSongs = [];
+    let playlists = {};
+    
+    // Listening history & preferences tracking
+    let playHistory = {};       // { artistName: playCount }
+    let enjoyArtists = [];      // Artists with >= 2 plays
+    let listenedArtists = [];   // Artists with >= 1 play
+    let followedArtists = [];   // Followed artists
+    let searchQuery = "";
+    let activeHomeTab = "home";
+    let activeProfileUser = "";
 
-      // 1. Always check loading state first
-      if (isLoading) {
-        container.innerHTML = '<p class="loading">Loading, please wait...</p>';
-        return;
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        const storedUser = localStorage.getItem('octave_user');
+        if (storedUser) currentUser = JSON.parse(storedUser);
+
+        const storedPlaylists = localStorage.getItem('octave_playlists');
+        if (storedPlaylists) playlists = JSON.parse(storedPlaylists);
+
+        const storedHistory = localStorage.getItem('octave_play_history');
+        if (storedHistory) playHistory = JSON.parse(storedHistory);
+
+        const storedFollowed = localStorage.getItem('octave_followed_artists');
+        if (storedFollowed) followedArtists = JSON.parse(storedFollowed);
+
+        recalculateArtistStats();
+      } catch (err) {
+        console.error("Error reading LocalStorage", err);
       }
 
-      // 2. Check for empty state only after loading is false
-      if (items.length === 0) {
-        container.innerHTML = '<p class="empty">Nothing here yet.</p>';
-        return;
-      }
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim().toLowerCase();
+        renderHomeContent();
+      });
 
-      // 3. Render items when available
-      let htmlOutput = '';
-      for (let i = 0; i < items.length; i++) {
-        htmlOutput += `<div class="data-item">${items[i].name}</div>`;
+      if (currentUser) {
+        updateUserBadge();
+        renderPlaylistsNav();
+        showView('library');
+        fetchSongs();
+      } else {
+        showView('auth');
       }
-      container.innerHTML = htmlOutput;
+    });
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('collapsed');
     }
 
-    // Mock API call to simulate fetch delay
-    function mockFetch(shouldReturnData) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          if (shouldReturnData) {
-            resolve([
-              { id: 1, name: 'First Record' },
-              { id: 2, name: 'Second Record' },
-              { id: 3, name: 'Third Record' }
-            ]);
+    function recalculateArtistStats() {
+      enjoyArtists = Object.keys(playHistory).filter(artist => playHistory[artist] >= 2);
+      listenedArtists = Object.keys(playHistory).filter(artist => playHistory[artist] >= 1);
+    }
+
+    function stringToColor(str) {
+      if (!str) return '#2a1840';
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      let color = '#';
+      for (let i = 0; i < 3; i++) color += ('00' + ((hash >> (i * 8)) & 0xFF).toString(16)).substr(-2);
+      return color;
+    }
+
+    const compressImage = (file, maxSide = 250, quality = 0.7) => new Promise((resolve) => {
+      if (!file) return resolve("");
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxSide) { height = Math.round((height * maxSide) / width); width = maxSide; }
           } else {
-            resolve([]);
+            if (height > maxSide) { width = Math.round((width * maxSide) / height); height = maxSide; }
           }
-        }, 1500);
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve("");
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+
+    const fileToBase64 = (file) => new Promise((resolve) => {
+      if (!file) return resolve("");
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve("");
+      reader.readAsDataURL(file);
+    });
+
+    function showView(viewName, filterPlaylist = null, profileUser = null) {
+      if (!currentUser && viewName !== 'auth') {
+        showView('auth');
+        return;
+      }
+      document.getElementById('view-auth').classList.add('hidden');
+      document.getElementById('view-library').classList.add('hidden');
+      document.getElementById('view-profile').classList.add('hidden');
+      document.getElementById('view-upload').classList.add('hidden');
+      document.getElementById('view-create-playlist').classList.add('hidden');
+      document.getElementById('view-settings').classList.add('hidden');
+
+      document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+      if (viewName === 'library') {
+        if (filterPlaylist) {
+          switchHomeTab('playlists');
+        } else {
+          renderHomeContent();
+          renderAlbumsTab();
+          renderArtistsTab();
+        }
+      }
+      if (viewName === 'profile') renderProfileView(profileUser || (currentUser ? currentUser.username : ""));
+      if (viewName === 'settings') populateSettings();
+      renderPlaylistsNav();
+    }
+
+    function switchHomeTab(tab) {
+      activeHomeTab = tab;
+      const tabs = ['home', 'playlists', 'albums', 'artists'];
+      tabs.forEach(t => {
+        document.getElementById(`home-tab-${t}`).classList.add('hidden');
+      });
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById(`home-tab-${tab}`).classList.remove('hidden');
+      event.target.classList?.add('active');
+
+      if (tab === 'home') renderHomeContent();
+      if (tab === 'playlists') renderPlaylistsTab();
+      if (tab === 'albums') renderAlbumsTab();
+      if (tab === 'artists') renderArtistsTab();
+    }
+
+    function renderHomeContent() {
+      const container = document.getElementById('home-content');
+
+      // 1. Loading State Check First
+      if (isLoadingSongs) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h2>Loading tracks...</h2>
+            <p>Fetching the latest music on Octave.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // 2. Empty State when no search term is entered
+      if (!searchQuery) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h2>Search Something to Get Started.</h2>
+            <p>Find songs, albums, and artists across Octave.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Filter matched songs across title, artist, releaseType
+      let matched = allSongs.filter(s => 
+        (s.title && s.title.toLowerCase().includes(searchQuery)) ||
+        (s.artist && s.artist.toLowerCase().includes(searchQuery)) ||
+        (s.uploader && s.uploader.toLowerCase().includes(searchQuery))
+      );
+
+      if (matched.length === 0) {
+        container.innerHTML = `<div class="empty-state"><h2>No results found for "${searchQuery}"</h2></div>`;
+        return;
+      }
+
+      // Priority Sorting Logic:
+      // 1. Followed Artists
+      // 2. Enjoyed Artists (>= 2 plays)
+      // 3. Listened Artists (>= 1 play)
+      // 4. Unheard / General
+      matched.sort((a, b) => {
+        const artistA = a.artist || a.uploader;
+        const artistB = b.artist || b.uploader;
+
+        const aFollowed = followedArtists.includes(artistA);
+        const bFollowed = followedArtists.includes(artistB);
+        if (aFollowed !== bFollowed) return bFollowed - aFollowed;
+
+        const aEnjoyed = enjoyArtists.includes(artistA);
+        const bEnjoyed = enjoyArtists.includes(artistB);
+        if (aEnjoyed !== bEnjoyed) return bEnjoyed - aEnjoyed;
+
+        const aListened = listenedArtists.includes(artistA);
+        const bListened = listenedArtists.includes(artistB);
+        if (aListened !== bListened) return bListened - aListened;
+
+        return 0;
+      });
+
+      container.innerHTML = `<h2>Search Results</h2><div id="search-grid" class="card-grid"></div>`;
+      renderSongs(matched, document.getElementById('search-grid'));
+    }
+
+    function renderPlaylistsTab() {
+      const grid = document.getElementById('playlists-grid');
+      grid.innerHTML = "";
+
+      if (isLoadingSongs) {
+        grid.innerHTML = "<p style='color: var(--text-sub);'>Loading playlists...</p>";
+        return;
+      }
+
+      const names = Object.keys(playlists);
+      if (names.length === 0) {
+        grid.innerHTML = "<p style='color: var(--text-sub);'>No playlists created yet.</p>";
+        return;
+      }
+      names.forEach(name => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-img">🎵</div>
+          <div class="card-title">${name}</div>
+          <div class="card-sub">${playlists[name].length} Tracks</div>
+        `;
+        card.onclick = () => {
+          renderSongs(playlists[name], document.getElementById('home-content'));
+          switchHomeTab('home');
+        };
+        grid.appendChild(card);
       });
     }
 
-    async function loadDataHandler(shouldReturnData) {
-      isLoading = true;
-      items = [];
-      render();
+    function renderAlbumsTab() {
+      const grid = document.getElementById('albums-grid');
+      grid.innerHTML = "";
 
-      try {
-        const result = await mockFetch(shouldReturnData);
-        items = result;
-      } catch (error) {
-        console.error('An error occurred during fetch:', error);
-      } finally {
-        isLoading = false;
-        render();
+      if (isLoadingSongs) {
+        grid.innerHTML = "<p style='color: var(--text-sub);'>Loading albums...</p>";
+        return;
+      }
+
+      // Filter albums belonging to enjoyed artists (>= 2 plays)
+      const enjoyedAlbumSongs = allSongs.filter(s => 
+        (s.releaseType === 'Album' || s.album) && enjoyArtists.includes(s.artist || s.uploader)
+      );
+
+      if (enjoyedAlbumSongs.length === 0) {
+        grid.innerHTML = "<p style='color: var(--text-sub);'>Listen to at least 2 songs from an artist to unlock their albums here!</p>";
+        return;
+      }
+
+      renderSongs(enjoyedAlbumSongs, grid);
+    }
+
+    function renderArtistsTab() {
+      const grid = document.getElementById('artists-grid');
+      grid.innerHTML = "";
+
+      if (isLoadingSongs) {
+        grid.innerHTML = "<p style='color: var(--text-sub);'>Loading artists...</p>";
+        return;
+      }
+
+      // Gather unique artists
+      const uniqueArtists = [...new Set(allSongs.map(s => s.artist || s.uploader).filter(Boolean))];
+      if (uniqueArtists.length === 0) {
+        grid.innerHTML = "<p style='color: var(--text-sub);'>No artists found.</p>";
+        return;
+      }
+
+      // Prioritize followed artists
+      uniqueArtists.sort((a, b) => {
+        const aFollow = followedArtists.includes(a);
+        const bFollow = followedArtists.includes(b);
+        if (aFollow !== bFollow) return bFollow - aFollow;
+        return a.localeCompare(b);
+      });
+
+      uniqueArtists.forEach(artist => {
+        const isFollowed = followedArtists.includes(artist);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-img" style="border-radius:50%;">${artist.charAt(0).toUpperCase()}</div>
+          <div class="card-title">${artist}</div>
+          ${isFollowed ? '<span class="badge-followed">Followed</span>' : ''}
+          <button class="follow-btn ${isFollowed ? 'following' : ''}">${isFollowed ? 'Following' : 'Follow'}</button>
+        `;
+
+        card.querySelector('.follow-btn').onclick = (e) => {
+          e.stopPropagation();
+          toggleFollowArtist(artist);
+        };
+        card.onclick = () => showView('profile', null, artist);
+        grid.appendChild(card);
+      });
+    }
+
+    function toggleFollowArtist(artistName) {
+      const idx = followedArtists.indexOf(artistName);
+      if (idx > -1) followedArtists.splice(idx, 1);
+      else followedArtists.push(artistName);
+
+      localStorage.setItem('octave_followed_artists', JSON.stringify(followedArtists));
+      renderArtistsTab();
+      renderHomeContent();
+      if (!document.getElementById('view-profile').classList.contains('hidden')) {
+        updateProfileFollowButton();
       }
     }
 
-    // Initialize initial render state
-    render();
+    function toggleFollowCurrentProfile() {
+      if (activeProfileUser) toggleFollowArtist(activeProfileUser);
+    }
 
-    // Event listeners
-    document.getElementById('btn-load-data').addEventListener('click', () => {
-      loadDataHandler(true);
-    });
+    function updateProfileFollowButton() {
+      const btn = document.getElementById('profile-follow-btn');
+      if (!btn) return;
+      
+      const isSelf = currentUser && currentUser.username === activeProfileUser;
+      if (isSelf) {
+        btn.classList.add('hidden');
+      } else {
+        btn.classList.remove('hidden');
+        const isFollowed = followedArtists.includes(activeProfileUser);
+        btn.innerText = isFollowed ? 'Following' : 'Follow';
+        btn.className = `follow-btn ${isFollowed ? 'following' : ''}`;
+      }
+    }
 
-    document.getElementById('btn-load-empty').addEventListener('click', () => {
-      loadDataHandler(false);
-    });
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      document.getElementById('auth-title').innerText = isRegisterMode ? "Create an Account" : "Log in to Octave";
+      document.getElementById('auth-submit').innerText = isRegisterMode ? "Register" : "Log In";
+      document.getElementById('auth-toggle').innerText = isRegisterMode ? "Have an account? Log In" : "Need an account? Register";
+    }
+
+    async function handleAuth() {
+      const username = document.getElementById('auth-username').value;
+      const password = document.getElementById('auth-password').value;
+      const submitBtn = document.getElementById('auth-submit');
+      const pfp = isRegisterMode ? "DEFAULT" : "";
+
+      const action = isRegisterMode ? "register" : "login";
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Authenticating...";
+
+      try {
+        const res = await fetch(SCRIPT_URL, { 
+          method: "POST", 
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, username, password, pfp }) 
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          currentUser = res.user;
+          localStorage.setItem('octave_user', JSON.stringify(currentUser));
+          updateUserBadge();
+          await fetchSongs();
+          renderPlaylistsNav();
+          showView('library');
+        } else { 
+          alert(res.message || "Authentication failed."); 
+        }
+      } catch (err) { 
+        alert("Error connecting to backend API."); 
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = isRegisterMode ? "Register" : "Log In";
+      }
+    }
+
+    function renderAvatar(avatarEl, user) {
+      if (!avatarEl) return;
+      const pfp = (user && user.pfp) ? user.pfp : "DEFAULT";
+      const username = (user && user.username) ? user.username : "U";
+
+      if (pfp && pfp !== "DEFAULT" && (pfp.startsWith("data:image") || pfp.startsWith("http"))) {
+        avatarEl.style.backgroundImage = `url('${pfp}')`;
+        avatarEl.style.backgroundSize = "cover";
+        avatarEl.style.backgroundPosition = "center";
+        avatarEl.style.backgroundColor = "transparent";
+        avatarEl.innerText = "";
+      } else {
+        avatarEl.style.backgroundImage = "none";
+        avatarEl.style.backgroundColor = stringToColor(username);
+        avatarEl.innerText = username.charAt(0).toUpperCase();
+      }
+    }
+
+    function updateUserBadge() {
+      if (!currentUser) return;
+      document.getElementById('user-badge').classList.remove('hidden');
+      document.getElementById('nav-settings').classList.remove('hidden');
+      renderAvatar(document.getElementById('user-avatar'), currentUser);
+      document.getElementById('user-name').innerText = currentUser.username;
+    }
+
+    function logout() {
+      currentUser = null;
+      localStorage.removeItem('octave_user');
+      document.getElementById('user-badge').classList.add('hidden');
+      document.getElementById('nav-settings').classList.add('hidden');
+      showView('auth');
+    }
+
+    function renderProfileView(targetUsername) {
+      activeProfileUser = targetUsername || currentUser.username;
+      document.getElementById('profile-username').innerText = activeProfileUser;
+      
+      const isSelf = currentUser && currentUser.username === activeProfileUser;
+      const uploadBtn = document.getElementById('profile-upload-btn');
+      
+      if (isSelf) {
+        uploadBtn.classList.remove('hidden');
+      } else {
+        uploadBtn.classList.add('hidden');
+      }
+
+      const targetUserObj = isSelf 
+        ? currentUser 
+        : { username: activeProfileUser, pfp: "DEFAULT" };
+
+      renderAvatar(document.getElementById('profile-avatar-lg'), targetUserObj);
+      updateProfileFollowButton();
+
+      const profileGrid = document.getElementById('profile-song-grid');
+
+      if (isLoadingSongs) {
+        profileGrid.innerHTML = "<p style='color: var(--text-sub);'>Loading profile tracks...</p>";
+        return;
+      }
+
+      const userSongs = allSongs.filter(s => (s.uploader || s.artist) === activeProfileUser);
+      renderSongs(userSongs, profileGrid);
+    }
+
+    function populateSettings() {
+      document.getElementById('settings-username').value = currentUser.username;
+      document.getElementById('settings-password').value = "";
+    }
+
+    async function handleUpdateSettings() {
+      const newUsername = document.getElementById('settings-username').value;
+      const newPassword = document.getElementById('settings-password').value;
+      const pfpFile = document.getElementById('settings-pfp-file').files[0];
+      const settingsBtn = document.getElementById('settings-btn');
+
+      settingsBtn.disabled = true;
+      settingsBtn.innerText = "Saving...";
+
+      let newPfpBase64 = currentUser.pfp || "DEFAULT";
+      if (pfpFile) {
+        newPfpBase64 = await compressImage(pfpFile, 250, 0.7);
+      }
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "updateSettings", 
+            currentUsername: currentUser.username, 
+            newUsername, 
+            newPassword: newPassword || null, 
+            pfp: newPfpBase64 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          currentUser = res.user || { username: newUsername, pfp: newPfpBase64 };
+          localStorage.setItem('octave_user', JSON.stringify(currentUser));
+          updateUserBadge();
+          alert("Settings updated!");
+          showView('library');
+        } else { 
+          alert(res.message || "Failed to update settings."); 
+        }
+      } catch (err) { 
+        alert("Update failed."); 
+      } finally { 
+        settingsBtn.disabled = false; 
+        settingsBtn.innerText = "Save Changes"; 
+      }
+    }
+
+    async function handleUpload() {
+      const releaseType = document.getElementById('song-type').value;
+      const title = document.getElementById('song-title').value;
+      const artist = document.getElementById('song-artist').value;
+      const coverInput = document.getElementById('song-cover').files[0];
+      const fileInput = document.getElementById('song-file').files[0];
+      const uploadBtn = document.getElementById('upload-btn');
+
+      if (!fileInput) return;
+      uploadBtn.disabled = true;
+      uploadBtn.innerText = "Uploading...";
+
+      const coverBase64 = coverInput ? await compressImage(coverInput, 400, 0.7) : "";
+      const audioBase64 = await fileToBase64(fileInput);
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "uploadSong", 
+            title, 
+            artist, 
+            releaseType, 
+            cover: coverBase64, 
+            audioBase64, 
+            uploader: currentUser.username 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") { 
+          alert("Upload successful!"); 
+          await fetchSongs();
+          showView('profile'); 
+        } else {
+          alert(res.message);
+        }
+      } catch (err) { 
+        alert("Upload failed."); 
+      } finally { 
+        uploadBtn.disabled = false; 
+        uploadBtn.innerText = "Upload Music"; 
+      }
+    }
+
+    function openEditModal(song) {
+      document.getElementById('edit-song-id').value = song.id;
+      document.getElementById('edit-song-title').value = song.title;
+      document.getElementById('edit-song-artist').value = song.artist;
+      document.getElementById('edit-song-type').value = song.releaseType || 'Single';
+      document.getElementById('edit-modal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.add('hidden');
+    }
+
+    async function handleSaveSongEdit() {
+      const songId = document.getElementById('edit-song-id').value;
+      const title = document.getElementById('edit-song-title').value;
+      const artist = document.getElementById('edit-song-artist').value;
+      const releaseType = document.getElementById('edit-song-type').value;
+      const coverFile = document.getElementById('edit-song-cover').files[0];
+      const btn = document.getElementById('edit-save-btn');
+
+      btn.disabled = true;
+      btn.innerText = "Saving...";
+
+      const coverBase64 = coverFile ? await compressImage(coverFile, 400, 0.7) : null;
+
+      try {
+        const res = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ 
+            action: "editSong", 
+            songId, 
+            title, 
+            artist, 
+            releaseType, 
+            cover: coverBase64, 
+            uploader: currentUser.username 
+          })
+        }).then(r => r.json());
+
+        if (res.status === "success") {
+          alert("Song updated!");
+          closeEditModal();
+          await fetchSongs();
+          showView('profile');
+        } else alert(res.message);
+      } catch (err) { alert("Failed to edit song."); }
+      finally { btn.disabled = false; btn.innerText = "Save Changes"; }
+    }
+
+    function handleCreatePlaylist() {
+      const name = document.getElementById('playlist-name').value;
+      if (!playlists[name]) {
+        playlists[name] = [];
+        localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+        document.getElementById('playlist-name').value = "";
+        renderPlaylistsNav();
+        showView('library', name);
+      } else alert("Playlist already exists!");
+    }
+
+    function renderPlaylistsNav() {
+      const container = document.getElementById('playlist-nav-list');
+      container.innerHTML = "";
+      Object.keys(playlists).forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'nav-item';
+        item.innerText = name;
+        item.onclick = () => showView('library', name);
+        container.appendChild(item);
+      });
+    }
+
+    function addToPlaylist(e, song) {
+      e.stopPropagation();
+      const pName = prompt(`Enter playlist name to add "${song.title}":\nExisting: ${Object.keys(playlists).join(', ')}`);
+      if (pName) {
+        if (!playlists[pName]) playlists[pName] = [];
+        if (!playlists[pName].some(s => s.id === song.id)) {
+          playlists[pName].push(song);
+          localStorage.setItem('octave_playlists', JSON.stringify(playlists));
+          renderPlaylistsNav();
+          alert("Added to playlist!");
+        } else alert("Song already in playlist.");
+      }
+    }
+
+    async function fetchSongs() {
+      isLoadingSongs = true;
+      if (!document.getElementById('view-library').classList.contains('hidden')) {
+        renderHomeContent();
+        renderAlbumsTab();
+        renderArtistsTab();
+      }
+      
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getSongs`).then(r => r.json());
+        if (res.status === "success") {
+          allSongs = res.songs || [];
+        }
+      } catch (err) { 
+        console.error("Failed to load tracks:", err); 
+      } finally {
+        isLoadingSongs = false;
+        if (!document.getElementById('view-library').classList.contains('hidden')) {
+          renderHomeContent();
+          renderAlbumsTab();
+          renderArtistsTab();
+        }
+        if (!document.getElementById('view-profile').classList.contains('hidden')) {
+          renderProfileView(activeProfileUser);
+        }
+      }
+    }
+
+    function renderSongs(songs, container) {
+      container.innerHTML = "";
+
+      if (isLoadingSongs) {
+        container.innerHTML = "<p style='color: var(--text-sub);'>Loading tracks...</p>";
+        return;
+      }
+
+      if (songs.length === 0) { 
+        container.innerHTML = "<p style='color: var(--text-sub);'>No tracks found.</p>"; 
+        return; 
+      }
+
+      songs.forEach(song => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const coverHtml = song.cover && song.cover.startsWith('data:image') 
+          ? `<div class="card-img"><img src="${song.cover}" alt="Cover"></div>` 
+          : `<div class="card-img">🎵</div>`;
+
+        const creator = song.uploader || song.artist || "Unknown";
+        const artistName = song.artist || creator;
+        const isOwner = currentUser && (song.uploader === currentUser.username || song.artist === currentUser.username);
+        const isFollowed = followedArtists.includes(artistName);
+        const isEnjoyed = enjoyArtists.includes(artistName);
+
+        card.innerHTML = `
+          <div class="card-badge">${song.releaseType || 'Single'}</div>
+          ${coverHtml}
+          <div class="card-title">${song.title}</div>
+          <div class="card-sub">${song.artist}</div>
+          <div><a class="creator-link">By @${creator}</a></div>
+          ${isFollowed ? '<span class="badge-followed">Followed</span>' : ''}
+          ${!isFollowed && isEnjoyed ? '<span class="badge-enjoyed">Enjoyed</span>' : ''}
+          <div class="card-actions">
+            <button class="btn-sm btn-playlist">+ Playlist</button>
+            ${isOwner ? `<button class="btn-sm btn-edit">✎ Edit</button>` : ''}
+          </div>
+        `;
+
+        card.querySelector('.creator-link').onclick = (e) => {
+          e.stopPropagation();
+          showView('profile', null, creator);
+        };
+        card.querySelector('.btn-playlist').onclick = (e) => addToPlaylist(e, song);
+        if (isOwner) card.querySelector('.btn-edit').onclick = (e) => { e.stopPropagation(); openEditModal(song); };
+        card.onclick = () => playSong(song);
+        container.appendChild(card);
+      });
+    }
+
+    function playSong(song) {
+      const artistName = song.artist || song.uploader || "Unknown";
+
+      // Track play counts to determine enjoyed artists
+      playHistory[artistName] = (playHistory[artistName] || 0) + 1;
+      localStorage.setItem('octave_play_history', JSON.stringify(playHistory));
+      recalculateArtistStats();
+
+      document.getElementById('player-title').innerText = song.title;
+      document.getElementById('player-artist').innerText = song.artist;
+      const coverEl = document.getElementById('player-cover');
+      
+      if (song.cover && song.cover.startsWith('data:image')) {
+        coverEl.innerHTML = `<img src="${song.cover}" />`;
+      } else coverEl.innerHTML = "🎵";
+
+      const player = document.getElementById('audio-element');
+      player.src = song.audio;
+      player.play();
+
+      // Refresh view to reflect updated priority rankings
+      if (searchQuery) renderHomeContent();
+    }
   </script>
 </body>
 </html>
