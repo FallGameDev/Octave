@@ -24,8 +24,24 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg-base); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; position: relative; }
 
-    /* Layout */
-    #sidebar { width: 240px; background-color: #040208; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; flex-shrink: 0; }
+    /* Collapsible Sidebar Setup */
+    #sidebar { 
+      width: 240px; 
+      background-color: #040208; 
+      padding: 24px 16px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 16px; 
+      flex-shrink: 0;
+      transition: margin-left 0.3s ease, transform 0.3s ease;
+      z-index: 20;
+    }
+    
+    /* Hidden Sidebar State */
+    #sidebar.collapsed {
+      margin-left: -240px;
+    }
+
     .brand { font-size: 1.5rem; font-weight: bold; color: var(--primary); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
     .sidebar-logo-img { height: 32px; width: auto; object-fit: contain; }
     .nav-item { color: var(--text-sub); text-decoration: none; font-weight: 600; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 12px; padding: 8px 0; }
@@ -37,11 +53,32 @@
     .user-profile { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--bg-highlight); cursor: pointer; }
     .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background-color: var(--bg-highlight); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 1.1rem; text-transform: uppercase; flex-shrink: 0; background-position: center; background-size: cover; }
 
-    .profile-header { display: flex; align-items: center; gap: 24px; background-color: var(--bg-surface); padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+    .profile-header { display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-surface); padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+    .profile-info { display: flex; align-items: center; gap: 24px; }
     .profile-avatar-lg { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; background-color: var(--bg-highlight); flex-shrink: 0; background-size: cover; background-position: center; }
 
-    #main-view { flex: 1; background: linear-gradient(to bottom, #1d0c2e, var(--bg-base)); padding: 32px; overflow-y: auto; padding-bottom: 120px; }
+    #main-view { flex: 1; background: linear-gradient(to bottom, #1d0c2e, var(--bg-base)); padding: 32px; overflow-y: auto; padding-bottom: 120px; transition: width 0.3s ease; }
     h2 { margin-bottom: 16px; }
+
+    /* Toggle Menu Button */
+    .menu-toggle-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--bg-highlight);
+      color: var(--text-main);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    .menu-toggle-btn:hover {
+      background: var(--bg-highlight);
+      color: var(--primary);
+    }
 
     /* Spotify-style Header & Search Bar */
     .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 16px; }
@@ -97,7 +134,7 @@
     .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
 
     /* Bottom Player Bar */
-    #player-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 90px; background-color: #0a0512; border-top: 1px solid #1f0f33; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 10; }
+    #player-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 90px; background-color: #0a0512; border-top: 1px solid #1f0f33; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 30; }
     .now-playing { display: flex; align-items: center; gap: 12px; width: 30%; }
     .now-playing-img { width: 56px; height: 56px; border-radius: 4px; object-fit: cover; background-color: var(--bg-highlight); display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .now-playing-img img { width: 100%; height: 100%; object-fit: cover; }
@@ -109,15 +146,14 @@
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div id="sidebar">
+  <!-- Sidebar (Collapsed by default) -->
+  <div id="sidebar" class="collapsed">
     <div class="brand">
       <img src="logo.png" alt="Octave Logo" class="sidebar-logo-img" onerror="this.style.display='none'">
       <span>Octave</span>
     </div>
     <div class="nav-item active" id="nav-library" onclick="showView('library')">Home / Library</div>
     <div class="nav-item" id="nav-profile" onclick="showView('profile')">View Profile</div>
-    <div class="nav-item" id="nav-upload" onclick="showView('upload')">Upload Music</div>
     <div class="nav-item" id="nav-create-playlist" onclick="showView('create-playlist')">+ Create Playlist</div>
     <div class="nav-item hidden" id="nav-settings" onclick="showView('settings')">Account Settings</div>
     
@@ -155,6 +191,9 @@
     <!-- Main Music Interface -->
     <div id="view-library" class="hidden">
       <div class="top-bar">
+        <button class="menu-toggle-btn" onclick="toggleSidebar()" title="Toggle Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
         <div class="search-container">
           <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
           <input type="text" id="searchInput" class="search-bar" placeholder="What do you want to listen to?">
@@ -192,13 +231,22 @@
 
     <!-- User Profile View -->
     <div id="view-profile" class="hidden">
+      <div class="top-bar">
+        <button class="menu-toggle-btn" onclick="toggleSidebar()" title="Toggle Menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+      </div>
       <div class="profile-header">
-        <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
-        <div>
-          <h1 id="profile-username" style="font-size: 2rem;"></h1>
-          <p style="color: var(--text-sub);" id="profile-subtitle">Artist Profile</p>
-          <button id="profile-follow-btn" class="follow-btn" style="width: auto; padding: 6px 20px; margin-top: 12px;" onclick="toggleFollowCurrentProfile()"></button>
+        <div class="profile-info">
+          <div id="profile-avatar-lg" class="profile-avatar-lg"></div>
+          <div>
+            <h1 id="profile-username" style="font-size: 2rem;"></h1>
+            <p style="color: var(--text-sub);" id="profile-subtitle">Artist Profile</p>
+            <button id="profile-follow-btn" class="follow-btn hidden" style="width: auto; padding: 6px 20px; margin-top: 12px;" onclick="toggleFollowCurrentProfile()"></button>
+          </div>
         </div>
+        <!-- Upload Song Action (Exclusive to Profile View) -->
+        <button id="profile-upload-btn" class="btn hidden" style="width: auto; padding: 10px 24px;" onclick="showView('upload')">+ Upload Song</button>
       </div>
       <h2>Uploaded Tracks</h2>
       <div id="profile-song-grid" class="card-grid"></div>
@@ -232,6 +280,7 @@
           <input type="file" id="song-file" accept="audio/*" required>
         </div>
         <button type="submit" class="btn" id="upload-btn">Upload Music</button>
+        <button type="button" class="btn btn-secondary" onclick="showView('profile')">Cancel</button>
       </form>
     </div>
 
@@ -365,6 +414,11 @@
         showView('auth');
       }
     });
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('collapsed');
+    }
 
     function recalculateArtistStats() {
       enjoyArtists = Object.keys(playHistory).filter(artist => playHistory[artist] >= 2);
@@ -613,9 +667,16 @@
     function updateProfileFollowButton() {
       const btn = document.getElementById('profile-follow-btn');
       if (!btn) return;
-      const isFollowed = followedArtists.includes(activeProfileUser);
-      btn.innerText = isFollowed ? 'Following' : 'Follow';
-      btn.className = `follow-btn ${isFollowed ? 'following' : ''}`;
+      
+      const isSelf = currentUser && currentUser.username === activeProfileUser;
+      if (isSelf) {
+        btn.classList.add('hidden');
+      } else {
+        btn.classList.remove('hidden');
+        const isFollowed = followedArtists.includes(activeProfileUser);
+        btn.innerText = isFollowed ? 'Following' : 'Follow';
+        btn.className = `follow-btn ${isFollowed ? 'following' : ''}`;
+      }
     }
 
     function toggleAuthMode() {
@@ -698,7 +759,16 @@
       activeProfileUser = targetUsername || currentUser.username;
       document.getElementById('profile-username').innerText = activeProfileUser;
       
-      const targetUserObj = (currentUser && currentUser.username === activeProfileUser) 
+      const isSelf = currentUser && currentUser.username === activeProfileUser;
+      const uploadBtn = document.getElementById('profile-upload-btn');
+      
+      if (isSelf) {
+        uploadBtn.classList.remove('hidden');
+      } else {
+        uploadBtn.classList.add('hidden');
+      }
+
+      const targetUserObj = isSelf 
         ? currentUser 
         : { username: activeProfileUser, pfp: "DEFAULT" };
 
@@ -791,7 +861,7 @@
         if (res.status === "success") { 
           alert("Upload successful!"); 
           await fetchSongs();
-          showView('library'); 
+          showView('profile'); 
         } else {
           alert(res.message);
         }
@@ -847,7 +917,7 @@
           alert("Song updated!");
           closeEditModal();
           await fetchSongs();
-          showView('library');
+          showView('profile');
         } else alert(res.message);
       } catch (err) { alert("Failed to edit song."); }
       finally { btn.disabled = false; btn.innerText = "Save Changes"; }
