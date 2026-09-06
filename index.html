@@ -370,6 +370,8 @@
     let currentUser = null;
     let isRegisterMode = false;
     let isLoadingSongs = true;
+    let isSearching = false;
+    let searchTimeout = null;
     let allSongs = [];
     let playlists = {};
     
@@ -403,7 +405,24 @@
 
       document.getElementById('searchInput').addEventListener('input', (e) => {
         searchQuery = e.target.value.trim().toLowerCase();
+        
+        if (searchTimeout) clearTimeout(searchTimeout);
+
+        if (!searchQuery) {
+          isSearching = false;
+          renderHomeContent();
+          return;
+        }
+
+        // Show loading state immediately when typing starts
+        isSearching = true;
         renderHomeContent();
+
+        // Simulate debounced search indexing delay to show smooth loading state
+        searchTimeout = setTimeout(() => {
+          isSearching = false;
+          renderHomeContent();
+        }, 300);
       });
 
       if (currentUser) {
@@ -517,7 +536,7 @@
     function renderHomeContent() {
       const container = document.getElementById('home-content');
 
-      // 1. Loading State Check First
+      // 1. Check data loading state first
       if (isLoadingSongs) {
         container.innerHTML = `
           <div class="empty-state">
@@ -528,7 +547,18 @@
         return;
       }
 
-      // 2. Empty State when no search term is entered
+      // 2. Check active search query loading state
+      if (isSearching) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h2>Searching...</h2>
+            <p>Looking for matching tracks, albums, and artists.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // 3. Show empty prompt when no search term is entered
       if (!searchQuery) {
         container.innerHTML = `
           <div class="empty-state">
@@ -584,7 +614,11 @@
       grid.innerHTML = "";
 
       if (isLoadingSongs) {
-        grid.innerHTML = "<p style='color: var(--text-sub);'>Loading playlists...</p>";
+        grid.innerHTML = `
+          <div class="empty-state" style="height: 20vh; grid-column: 1 / -1;">
+            <h2>Loading playlists...</h2>
+          </div>
+        `;
         return;
       }
 
@@ -614,7 +648,11 @@
       grid.innerHTML = "";
 
       if (isLoadingSongs) {
-        grid.innerHTML = "<p style='color: var(--text-sub);'>Loading albums...</p>";
+        grid.innerHTML = `
+          <div class="empty-state" style="height: 20vh; grid-column: 1 / -1;">
+            <h2>Loading albums...</h2>
+          </div>
+        `;
         return;
       }
 
@@ -636,7 +674,11 @@
       grid.innerHTML = "";
 
       if (isLoadingSongs) {
-        grid.innerHTML = "<p style='color: var(--text-sub);'>Loading artists...</p>";
+        grid.innerHTML = `
+          <div class="empty-state" style="height: 20vh; grid-column: 1 / -1;">
+            <h2>Loading artists...</h2>
+          </div>
+        `;
         return;
       }
 
@@ -805,8 +847,14 @@
 
       const profileGrid = document.getElementById('profile-song-grid');
 
+      // 1. Check data loading state for profile tracks
       if (isLoadingSongs) {
-        profileGrid.innerHTML = "<p style='color: var(--text-sub);'>Loading profile tracks...</p>";
+        profileGrid.innerHTML = `
+          <div class="empty-state" style="height: 30vh; grid-column: 1 / -1;">
+            <h2>Loading user profile...</h2>
+            <p>Fetching tracks uploaded by @${activeProfileUser}.</p>
+          </div>
+        `;
         return;
       }
 
@@ -1002,6 +1050,9 @@
         renderAlbumsTab();
         renderArtistsTab();
       }
+      if (!document.getElementById('view-profile').classList.contains('hidden')) {
+        renderProfileView(activeProfileUser);
+      }
       
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getSongs`).then(r => r.json());
@@ -1027,7 +1078,11 @@
       container.innerHTML = "";
 
       if (isLoadingSongs) {
-        container.innerHTML = "<p style='color: var(--text-sub);'>Loading tracks...</p>";
+        container.innerHTML = `
+          <div class="empty-state" style="height: 20vh; grid-column: 1 / -1;">
+            <h2>Loading tracks...</h2>
+          </div>
+        `;
         return;
       }
 
